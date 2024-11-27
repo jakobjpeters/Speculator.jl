@@ -29,6 +29,7 @@ julia> speculate([Base]; all = false, log = false, recursive = false)
 
 ### Planned
 
+- Disable using Preferences.jl
 - Multi-threading
 - Abstractly typed methods
 - Support for Revise.jl
