@@ -1,7 +1,7 @@
 
 module Speculator
 
-export speculate!
+export speculate
 
 const cache = Set{Method}()
 
@@ -21,27 +21,29 @@ end
 _speculate(_, _, _, @nospecialize _) = nothing
 
 """
-    speculate!(::Vector{Module};
+    speculate(modules;
         all::Bool = true,
         ignore::Vector{Symbol} = Symbol[],
         log::Bool = true
     )
 """
-function speculate!(modules::Vector{Module};
+function speculate(modules;
     all::Bool = true, ignore::Vector{Symbol} = Symbol[], log::Bool = true, recursive::Bool = true)
-    n, _ignore = length(cache), Set(ignore)
+    _ignore = Set(ignore)
+    _modules = collect(Module, modules)
+    n = length(cache)
 
-    while !isempty(modules)
-        _module = pop!(modules)
+    while !isempty(_modules)
+        _module = pop!(_modules)
 
         for name in names(_module; all)
-            name in _ignore || _speculate(modules, recursive, _module, getfield(_module, name))
+            name in _ignore || _speculate(_modules, recursive, _module, getfield(_module, name))
         end
     end
 
     log && @info "Precompiled `$(length(cache) - n)` methods"
 end
 
-speculate!([Speculator])
+speculate([Speculator])
 
 end # Speculator

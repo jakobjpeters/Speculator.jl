@@ -19,7 +19,7 @@ julia> add(; url = "github.com/jakobjpeters/Speculator.jl")
 ```julia-repl
 julia> using Speculator
 
-julia> speculate!([Base]; all = false, log = false, recursive = false)
+julia> speculate([Base]; all = false, log = false, recursive = false)
 ```
 
 ## Features
