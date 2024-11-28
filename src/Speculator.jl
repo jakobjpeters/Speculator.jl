@@ -1,15 +1,14 @@
 
 module Speculator
 
-export Verbosity, debug, none, review, speculate, warn
+export Verbosity, debug, none, speculate, warn
 
 const __speculate = quote
     for method in methods(x)
         sig = method.sig
 
-        if !(method in cache) && isconcretetype(sig)
+        if isconcretetype(sig)
             types = getfield(sig, 3)[(begin + 1):end]
-            push!(cache, method)
 
             if precompile(x, ntuple(i -> types[i], length(types)))
                 v == debug && @info "Precompiled `$(signature(x, types))`"
@@ -20,8 +19,6 @@ const __speculate = quote
     end
 end
 
-const cache = Set{Method}()
-
 signature(f, types) =
     string(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
 
@@ -30,19 +27,18 @@ signature(f, types) =
 
 An `Enum` that determines what logging statements are shown during [`speculate`](@ref).
 
-In increasing verbosity, the variants are [`none`](@ref),
-[`warn`](@ref), [`summary`](@ref), and [`debug`](@ref).
+In increasing verbosity, the variants are
+[`none`](@ref), [`warn`](@ref), and [`debug`](@ref).
 
 ```jldoctest
 julia> Verbosity
 Enum Verbosity:
 none = 0
 warn = 1
-review = 2
-debug = 3
+debug = 2
 ```
 """
-@enum Verbosity none warn review debug
+@enum Verbosity none warn debug
 
 @doc """
     none
@@ -73,31 +69,16 @@ warn::Verbosity = 1
 """ warn
 
 @doc """
-    review
-
-A variant of [`Verbosity`](@ref) which specifies that [`speculate`](@ref) should show
-warnings for failed calls to [`precompile`] and the total number of methods precompiled.
-
-# Examples
-
-```jldoctest
-julia> review
-review::Verbosity = 2
-```
-""" review
-
-@doc """
     debug
 
-A variant of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
-should show each successful call to `precompile`, warnings for failed
-calls to `precompile`, and the total number of methods precompiled.
+A variant of [`Verbosity`](@ref) which specifies that [`speculate`](@ref) should show
+each successful call to `precompile` and warnings for failed calls to `precompile`.
 
 # Examples
 
 ```jldoctest
 julia> debug
-debug::Verbosity = 3
+debug::Verbosity = 2
 ```
 """ debug
 
@@ -122,10 +103,9 @@ If this function is used as a precompilation workload,
 its `verbosity` should be set to [`none`](@ref) or [`warn`](@ref).
 """
 function speculate(modules; all::Bool = true, ignore::Vector{Symbol} = Symbol[],
-    recursive::Bool = true, verbosity::Verbosity = summary)
+    recursive::Bool = true, verbosity::Verbosity = warn)
     _ignore = Set(ignore)
     _modules = collect(Module, modules)
-    n = length(cache)
 
     while !isempty(_modules)
         _module = pop!(_modules)
@@ -135,10 +115,8 @@ function speculate(modules; all::Bool = true, ignore::Vector{Symbol} = Symbol[],
                 _speculate(_modules, _module, recursive, verbosity, getfield(_module, name))
         end
     end
-
-    if verbosity > warn @info "Precompiled `$(length(cache) - n)` methods" end
 end
 
-speculate([Speculator]; verbosity = warn)
+speculate([Speculator])
 
 end # Speculator
