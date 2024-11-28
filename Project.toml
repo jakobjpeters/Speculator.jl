@@ -2,3 +2,6 @@ name = "Speculator"
 uuid = "ac92255e-d98e-45c4-b636-98964c1c8a8b"
 authors = ["Jakob Peters <jakobj.peters@gmail.com>"]
 version = "0.1.0"
+
+[compat]
+julia = "1.10"
