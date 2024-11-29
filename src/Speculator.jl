@@ -1,6 +1,9 @@
 
 module Speculator
 
+using Base: uniontypes
+using InteractiveUtils: subtypes
+
 export Verbosity, debug, none, speculate, warn
 
 const __speculate = quote
@@ -11,21 +14,23 @@ const __speculate = quote
             types = getfield(sig, 3)[(begin + 1):end]
 
             if precompile(x, ntuple(i -> types[i], length(types)))
-                v == debug && @info "Precompiled `$(signature(x, types))`"
-            elseif v > none
+                verbosity == debug && @info "Precompiled `$(signature(x, types))`"
+            elseif verbosity > none
                 @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))"
             end
         end
     end
 end
 
-signature(f, types) =
+const cache = Set{UInt}()
+
+signature((@nospecialize f), (@nospecialize types)) =
     string(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
 
 """
     Verbosity
 
-An `Enum` that determines what logging statements are shown during [`speculate`](@ref).
+an `enum` that determines what logging statements are shown during [`speculate`](@ref).
 
 In increasing verbosity, the variants are
 [`none`](@ref), [`warn`](@ref), and [`debug`](@ref).
@@ -82,41 +87,39 @@ debug::Verbosity = 2
 ```
 """ debug
 
-function _speculate(ms::Vector{Module}, m::Module, recursive::Bool, ::Verbosity, x::Module)
-    recursive && m != x && push!(ms, x)
-    nothing
-end
-_speculate(_, _, _, _, @nospecialize _) = nothing
+@eval function _speculate(x::DataType; verbosity, kwargs...)
+    $__speculate
 
-@eval _speculate(_, _, _, v::Verbosity, x::DataType) = $__speculate
-@eval _speculate(_, _, _, v::Verbosity, @nospecialize x::Function) = $__speculate
+    for subtype in subtypes(x)
+        speculate(subtype; verbosity, kwargs...)
+    end
+end
+@eval _speculate(@nospecialize x::Function; verbosity, kwargs...) = $__speculate
+_speculate(x::Module; all, kwargs...) =
+    for name in names(x; all)
+        isdefined(x, name) && speculate(getfield(x, name); all, kwargs...)
+    end
+_speculate(::Type; _...) = nothing
+_speculate(x::Union; kwargs...) = for type in uniontypes(x)
+    speculate(type; kwargs...)
+end
+_speculate(@nospecialize ::T; kwargs...) where T = speculate(T; kwargs...)
 
 """
-    speculate(modules;
-        all::Bool = true,
-        ignore::Vector{Symbol} = Symbol[],
-        recursive::Bool = true,
-        verbosity::Verbosity = warn
-    )
+    speculate(::Any; all::Bool = true, verbosity::Verbosity = warn)
 
 If this function is used as a precompilation workload,
 its `verbosity` should be set to [`none`](@ref) or [`warn`](@ref).
 """
-function speculate(modules; all::Bool = true, ignore::Vector{Symbol} = Symbol[],
-    recursive::Bool = true, verbosity::Verbosity = warn)
-    _ignore = Set(ignore)
-    _modules = collect(Module, modules)
+function speculate(@nospecialize x; all::Bool = true, verbosity::Verbosity = warn)
+    object_id = objectid(x)
 
-    while !isempty(_modules)
-        _module = pop!(_modules)
-
-        for name in names(_module; all)
-            name in _ignore ||
-                _speculate(_modules, _module, recursive, verbosity, getfield(_module, name))
-        end
+    if !(object_id in cache)
+        push!(cache, object_id)
+        _speculate(x; all, verbosity)
     end
 end
 
-speculate([Speculator])
+speculate(Speculator)
 
 end # Speculator
