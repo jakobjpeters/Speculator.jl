@@ -10,6 +10,8 @@ export Verbosity, debug, none, warn, install_speculate_mode, speculate
 
 const cache = Set{UInt}()
 
+const lock = ReentrantLock()
+
 function log(f, background)
     flag = background && isdefined(Base, :active_repl)
     flag && print(stderr, "\33[2K\r\e[A")
@@ -154,8 +156,8 @@ __speculate(::T; kwargs...) where T = _speculate(T; kwargs...)
 function _speculate(x; kwargs...)
     object_id = objectid(x)
 
-    if !(object_id in cache)
-        push!(cache, object_id)
+    if @lock lock !(object_id in cache)
+        @lock lock push!(cache, object_id)
         __speculate(x; kwargs...)
     end
 end
