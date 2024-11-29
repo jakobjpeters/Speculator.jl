@@ -88,6 +88,8 @@ debug::Verbosity = 2
 """
     empty_cache()
 
+Empty the [`speculate`](@ref) cache, which enables workloads to be repeated.
+
 !!! tip
     This function is safe for threads.
 
@@ -180,7 +182,7 @@ end
 
 Generate and `precompile` a workload from the given value.
 
-To prevent infinite recurions, workloads are not repeated for the same input values.
+To prevent infinite recurion, workloads are not repeated for the same input values.
 This is implemented by caching values by their `objectid`.
 Workloads may be repeated after calling [`empty_cache`](@ref).
 
