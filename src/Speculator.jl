@@ -6,7 +6,7 @@ using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
-export Verbosity, debug, none, warn, install_speculate_mode, speculate
+export Verbosity, debug, none, warn, empty_cache, install_speculate_mode, speculate
 
 const cache = Set{UInt}()
 
@@ -84,6 +84,19 @@ julia> debug
 debug::Verbosity = 2
 ```
 """ debug
+
+"""
+    empty_cache()
+
+!!! tip
+    This function is safe for threads.
+
+```jldoctest
+julia> empty_cache()
+[ Info: The `speculate` cache has been emptied
+```
+"""
+empty_cache() = (@lock lock empty!(cache); @info "The `speculate` cache has been emptied")
 
 """
     install_speculate_mode(;
@@ -165,11 +178,35 @@ end
 """
     speculate(::Any; background::Bool = true, verbosity::Verbosity = warn)
 
+Generate and `precompile` a workload from the given value.
+
+To prevent infinite recurions, workloads are not repeated for the same input values.
+This is implemented by caching values by their `objectid`.
+Workloads may be repeated after calling [`empty_cache`](@ref).
+
+The follows input types generate these corresponding workloads:
+
+- `DataType`: Call `precompile` for each method with a concrete signature.
+    Recursively call `speculate` for each subtype.
+- `Function`: Call `precompile` for each method with a concrete signature.
+- `Module`: Recursively call `speculate` on values contained within it.
+- `Type`: Do nothing.
+- `Union`: Recursively call `speculate` on each variant.
+
 The `background` specifies whether to precompile on a thread in the `:default` pool.
+The number of available threads can be determined using `Threads.nthreads(:default)`.
 
 The [`Verbosity`](@ref) specifies what logging statements to show.
 If this function is used as a precompilation workload,
 it should be set to [`none`](@ref) or [`warn`](@ref).
+
+!!! tip
+    This function is safe for threads.
+
+# Examples
+```jldoctest
+julia> speculate(Speculator)
+```
 """
 function speculate(x; background::Bool = true, verbosity::Verbosity = warn)
     background ?
