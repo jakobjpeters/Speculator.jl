@@ -131,20 +131,24 @@ function install_speculate_mode(; start_key = "\\M-s",
     @info "The `speculate` REPL mode has been installed. Press [$start_key] to enter and [Backspace] to exit."
 end
 
-___speculate(x; background, verbosity) =
-    for method in methods(x)
-        sig = method.sig
+____speculate(x, sig::DataType; background, verbosity) =
+    if !(Tuple <: sig)
+        types = sig.types[(begin + 1):end]
 
-        if isconcretetype(sig)
-            types = getfield(sig, 3)[(begin + 1):end]
-
+        if isconcretetype(Tuple{types...})
             if precompile(x, ntuple(i -> types[i], length(types)))
                 verbosity == debug &&
                     log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
             elseif verbosity > none
-                log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))"), background)
+                log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
             end
         end
+    end
+____speculate(x, ::UnionAll; _...) = nothing
+
+___speculate(x; kwargs...) =
+    for method in methods(x)
+        ____speculate(x, method.sig; kwargs...)
     end
 
 function __speculate(x::DataType, cache; kwargs...)
