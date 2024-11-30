@@ -10,13 +10,33 @@ export Verbosity, debug, none, review, warn, install_speculate_mode, speculate
 
 function log(f, background)
     flag = background && isdefined(Base, :active_repl)
-    flag && print(stderr, "\33[2K\r\e[A")
+    flag && print(stderr, "\33[2K\r\33[A")
     f()
     if flag
         println(stderr)
         refresh_line(active_repl.mistate)
     end
 end
+
+precompile_methods(x; kwargs...) =
+    for method in methods(x)
+        precompile_method(x, method.sig; kwargs...)
+    end
+
+precompile_method(x, sig::DataType; background, verbosity) =
+    if !(Tuple <: sig)
+        types = sig.types[(begin + 1):end]
+
+        if isconcretetype(Tuple{types...})
+            if precompile(x, ntuple(i -> types[i], length(types)))
+                verbosity == debug &&
+                    log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
+            elseif verbosity > none
+                log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
+            end
+        end
+    end
+precompile_method(x, ::UnionAll; _...) = nothing
 
 signature(f, types) =
     string(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
@@ -131,39 +151,20 @@ function install_speculate_mode(; start_key = "\\M-s",
     @info "The `speculate` REPL mode has been installed. Press [$start_key] to enter and [Backspace] to exit."
 end
 
-____speculate(x, sig::DataType; background, verbosity) =
-    if !(Tuple <: sig)
-        types = sig.types[(begin + 1):end]
-
-        if isconcretetype(Tuple{types...})
-            if precompile(x, ntuple(i -> types[i], length(types)))
-                verbosity == debug &&
-                    log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
-            elseif verbosity > none
-                log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
-            end
-        end
-    end
-____speculate(x, ::UnionAll; _...) = nothing
-
-___speculate(x; kwargs...) =
-    for method in methods(x)
-        ____speculate(x, method.sig; kwargs...)
-    end
-
 function __speculate(x::DataType, cache; kwargs...)
-    ___speculate(x; kwargs...)
+    precompile_methods(x; kwargs...)
 
     for subtype in subtypes(x)
         _speculate(subtype, cache; kwargs...)
     end
 end
-__speculate(x::Function, cache; kwargs...) = ___speculate(x; kwargs...)
-__speculate(x::Module, cache; kwargs...) =
-    for name in names(x; all = true)
-        isdefined(x, name) && _speculate(getfield(x, name), cache; kwargs...)
-    end
-__speculate(::Type, cache; _...) = nothing
+__speculate(x::Function, cache; kwargs...) = precompile_methods(x; kwargs...)
+__speculate(x::Module, cache; kwargs...) = for name in names(x; all = true)
+    isdefined(x, name) && _speculate(getfield(x, name), cache; kwargs...)
+end
+__speculate(x::UnionAll, cache; kwargs...) = for type in x.body.body.name.cache
+    _speculate(type, cache; kwargs...)
+end
 __speculate(x::Union, cache; kwargs...) = for type in uniontypes(x)
     _speculate(type, cache; kwargs...)
 end
@@ -191,13 +192,13 @@ may be used to estimate the compilation time.
 
 # Input types
 
-- `Any`: Call `speculate` on the value's type.
+- `Any`: Call `speculate` for the value's type.
 - `DataType`: Call `precompile` for each method with a concrete signature.
     Call `speculate` for each subtype.
 - `Function`: Call `precompile` for each method with a concrete signature.
-- `Module`: Call `speculate` on each of its values.
-- `Type`: Do nothing.
-- `Union`: Call `speculate` on each variant.
+- `Module`: Call `speculate` for each of its values.
+- `UnionAll`: Call `speculate` for each cached `DataType`.
+- `Union`: Call `speculate` for each variant.
 
 # Keyword parameters
 
