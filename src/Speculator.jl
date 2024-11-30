@@ -6,7 +6,7 @@ using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
-export Verbosity, debug, none, warn, install_speculate_mode, speculate
+export Verbosity, debug, none, review, warn, install_speculate_mode, speculate
 
 function log(f, background)
     flag = background && isdefined(Base, :active_repl)
@@ -26,18 +26,19 @@ signature(f, types) =
 
 An `enum` that determines what logging statements are shown during [`speculate`](@ref).
 
-In increasing verbosity, the variants are
-[`none`](@ref), [`warn`](@ref), and [`debug`](@ref).
+In increasing verbosity, the variants are [`none`](@ref),
+[`warn`](@ref), [`review`](@ref), and [`debug`](@ref).
 
 ```jldoctest
 julia> Verbosity
 Enum Verbosity:
 none = 0
 warn = 1
-debug = 2
+review = 2
+debug = 3
 ```
 """
-@enum Verbosity none warn debug
+@enum Verbosity none warn review debug
 
 @doc """
     none
@@ -68,16 +69,31 @@ warn::Verbosity = 1
 """ warn
 
 @doc """
-    debug
+    review
 
-A variant of [`Verbosity`](@ref) which specifies that [`speculate`](@ref) should show
-each successful call to `precompile` and warnings for failed calls to `precompile`.
+A variant of [`Verbosity`](@ref) which specifies that [`speculate`](@ref) should show warnings
+for failed calls to `precompile` and the total number of values that have been speculated.
 
 # Examples
 
 ```jldoctest
 julia> debug
 debug::Verbosity = 2
+```
+""" review
+
+@doc """
+    debug
+
+A variant of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
+should show each successful call to `precompile`, the total number of values
+that have been speculated, and warnings for failed calls to `precompile`.
+
+# Examples
+
+```jldoctest
+julia> debug
+debug::Verbosity = 3
 ```
 """ debug
 
@@ -197,10 +213,15 @@ julia> speculate(Speculator)
 ```
 """
 function speculate(x; background::Bool = true, verbosity::Verbosity = warn)
-    cache = Set{UInt}()
-    background ? (@spawn _speculate(x, cache; background, verbosity)) :
+    function f()
+        cache = Set{UInt}()
         _speculate(x, cache; background, verbosity)
-    nothing
+        if verbosity ≥ review
+            log(() -> (@info "Speculated `$(length(cache))` values"), background)
+        end
+    end
+
+    background ? (@spawn f(); nothing) : f()
 end
 
 speculate(Speculator)
