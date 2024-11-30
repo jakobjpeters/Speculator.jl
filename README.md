@@ -70,7 +70,7 @@ an estimate of the time spent searching for methods to precompile.
 The difference is then an estimate of the compilation time,
 which is approximately 10 seconds.
 
-Since Speculator.jl currently only compiles methods with concrete type signatures, the
+Since Speculator.jl only compiles methods with concrete type signatures, the
 methods compiled by this workload are probably either called within Plots.jl or dead code.
 Therefore, including this precompilation workload in Plots.jl or running it in the background
 of an interactive session could save up to 10 seconds of compilation time per session.
@@ -93,6 +93,6 @@ cost ratio in terms of compilation and loading time.
 ### Planned
 
 - Disable during development using Preferences.jl
-- Abstractly typed methods
+- Abstractly typed methods?
 - Support for Revise.jl
 - Threaded workloads
