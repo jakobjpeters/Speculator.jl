@@ -17,6 +17,24 @@ In the latter case, it can be used in a `startup.jl` or interactively in the REP
 
 Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
 
+## Usage
+
+### Installation
+
+```julia-repl
+julia> using Pkg: add
+
+julia> add(; url = "github.com/jakobjpeters/Speculator.jl")
+```
+
+### Showcase
+
+```julia-repl
+julia> using Speculator
+
+julia> speculate(Base; verbosity = debug)
+```
+
 ## Case Study
 
 Consider Plots.jl, the go-to example when discussing latency in Julia
@@ -56,25 +74,7 @@ This means that the workload runs approximately 10 seconds of compilation.
 Further, since Speculator.jl currently only compiles methods with concrete type signatures,
 the methods that were compiled are guaranteed to be either used by Plots.jl or dead code.
 Including this precompilation workload in Plots.jl or running it in the background of
-an interactive session could save up to 10 seconds of compilation in each session.
-
-## Usage
-
-### Installation
-
-```julia-repl
-julia> using Pkg: add
-
-julia> add(; url = "github.com/jakobjpeters/Speculator.jl")
-```
-
-### Usage
-
-```julia-repl
-julia> using Speculator
-
-julia> speculate(Speculator)
-```
+an interactive session could save up to 10 seconds of compilation time.
 
 ## Features
 
