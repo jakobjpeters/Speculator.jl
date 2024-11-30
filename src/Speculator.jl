@@ -41,6 +41,16 @@ precompile_method(x, ::UnionAll; _...) = nothing
 signature(f, types) =
     string(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
 
+speculate_type(x::DataType, cache; kwargs...) = for subtype in subtypes(x)
+    _speculate(subtype, cache; kwargs...)
+end
+speculate_type(x::UnionAll, cache; kwargs...) = for type in x.body.body.name.cache
+    _speculate(type, cache; kwargs...)
+end
+speculate_type(x::Union, cache; kwargs...) = for type in uniontypes(x)
+    _speculate(type, cache; kwargs...)
+end
+
 """
     Verbosity
 
@@ -151,22 +161,13 @@ function install_speculate_mode(; start_key = "\\M-s",
     @info "The `speculate` REPL mode has been installed. Press [$start_key] to enter and [Backspace] to exit."
 end
 
-function __speculate(x::DataType, cache; kwargs...)
-    precompile_methods(x; kwargs...)
-
-    for subtype in subtypes(x)
-        _speculate(subtype, cache; kwargs...)
-    end
-end
 __speculate(x::Function, cache; kwargs...) = precompile_methods(x; kwargs...)
 __speculate(x::Module, cache; kwargs...) = for name in names(x; all = true)
     isdefined(x, name) && _speculate(getfield(x, name), cache; kwargs...)
 end
-__speculate(x::UnionAll, cache; kwargs...) = for type in x.body.body.name.cache
-    _speculate(type, cache; kwargs...)
-end
-__speculate(x::Union, cache; kwargs...) = for type in uniontypes(x)
-    _speculate(type, cache; kwargs...)
+function __speculate(x::Union{DataType, UnionAll, Union}, cache; kwargs...)
+    precompile_methods(x; kwargs...)
+    speculate_type(x, cache; kwargs...)
 end
 __speculate(::T, cache; kwargs...) where T = _speculate(T, cache; kwargs...)
 
