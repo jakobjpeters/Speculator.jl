@@ -37,8 +37,8 @@ julia> speculate(Base; verbosity = debug)
 
 ## Case Study
 
-Consider Plots.jl, the go-to example when discussing latency in Julia
-and the substantial improvements made to the time-to-first-X problem.
+Consider [Plots.jl](https://github.com/JuliaPlots/Plots.jl), the go-to example when discussing
+latency in Julia and the substantial improvements made to the time-to-first-X problem.
 
 ```julia-repl
 julia> using Plots
@@ -53,28 +53,36 @@ However, it is challenging to manually identify an exhaustive set of methods to 
 Speculator.jl can do this automatically.
 
 ```julia-repl
+julia> @elapsed using Speculator
+0.024472137
+
 julia> @elapsed speculate(Plots; background = false)
 10.865878121
-```
-
-This information alone doesn't say much, since it measures both time spent
-searching for methods to precompile and the time precompiling itself.
-Since the workload is now compiled by Julia, emptying the cache and running it again
-provides an estimate of the time spent outside of compilation.
-
-```julia-repl
-julia> empty_cache()
-[ Info: The `speculate` cache has been emptied
 
 julia> @elapsed speculate(Plots; background = false)
 0.54081279
 ```
 
-This means that the workload runs approximately 10 seconds of compilation.
-Further, since Speculator.jl currently only compiles methods with concrete type signatures,
-the methods that were compiled are guaranteed to be either used by Plots.jl or dead code.
-Including this precompilation workload in Plots.jl or running it in the background of
-an interactive session could save up to 10 seconds of compilation time.
+The initial call to `speculate` measures both time spent searching
+for methods to precompile and the precompilation time itself.
+Since the workload has been precompiled, the subsequent call provides
+an estimate of the time spent searching for methods to precompile.
+The difference is then an estimate of the compilation time,
+which is approximately 10 seconds.
+
+Since Speculator.jl currently only compiles methods with concrete type signatures, the
+methods compiled by this workload are guaranteed to be either called within Plots.jl or dead code.
+Therefore, including this precompilation workload in Plots.jl or running it in the background
+of an interactive session could save up to 10 seconds of compilation time per session.
+
+If instead, the Plots.jl workload did not compile any new methods,
+using Speculator.jl would not meaningfully lengthen loading time.
+The package itself takes a fraction of a second to load in a package or interactive session.
+Running this workload in Plots.jl would only add a half of a second to
+precompilation time upon installation; running a workload in the background
+of an interactive session would only take a fraction of a second to initiate.
+Therefore, using Speculator.jl has a high benefit to
+cost ratio in terms of compilation and loading time.
 
 ## Features
 

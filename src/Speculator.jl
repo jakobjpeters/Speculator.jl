@@ -6,11 +6,7 @@ using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
-export Verbosity, debug, none, warn, empty_cache, install_speculate_mode, speculate
-
-const cache = Set{UInt}()
-
-const lock = ReentrantLock()
+export Verbosity, debug, none, warn, install_speculate_mode, speculate
 
 function log(f, background)
     flag = background && isdefined(Base, :active_repl)
@@ -86,21 +82,6 @@ debug::Verbosity = 2
 """ debug
 
 """
-    empty_cache()
-
-Empty the [`speculate`](@ref) cache, which enables workloads to be repeated.
-
-!!! tip
-    This function is safe for threads.
-
-```jldoctest
-julia> empty_cache()
-[ Info: The `speculate` cache has been emptied
-```
-"""
-empty_cache() = (@lock lock empty!(cache); @info "The `speculate` cache has been emptied")
-
-"""
     install_speculate_mode(;
         start_key = "\\M-s", prompt_text = "speculate> ", prompt_color = :cyan,
     kwargs...)
@@ -150,30 +131,30 @@ ___speculate(x; background, verbosity) =
         end
     end
 
-function __speculate(x::DataType; kwargs...)
+function __speculate(x::DataType, cache; kwargs...)
     ___speculate(x; kwargs...)
 
     for subtype in subtypes(x)
-        _speculate(subtype; kwargs...)
+        _speculate(subtype, cache; kwargs...)
     end
 end
-__speculate(x::Function; kwargs...) = ___speculate(x; kwargs...)
-__speculate(x::Module; kwargs...) =
+__speculate(x::Function, cache; kwargs...) = ___speculate(x; kwargs...)
+__speculate(x::Module, cache; kwargs...) =
     for name in names(x; all = true)
-        isdefined(x, name) && _speculate(getfield(x, name); kwargs...)
+        isdefined(x, name) && _speculate(getfield(x, name), cache; kwargs...)
     end
-__speculate(::Type; _...) = nothing
-__speculate(x::Union; kwargs...) = for type in uniontypes(x)
-    _speculate(type; kwargs...)
+__speculate(::Type, cache; _...) = nothing
+__speculate(x::Union, cache; kwargs...) = for type in uniontypes(x)
+    _speculate(type, cache; kwargs...)
 end
-__speculate(::T; kwargs...) where T = _speculate(T; kwargs...)
+__speculate(::T, cache; kwargs...) where T = _speculate(T, cache; kwargs...)
 
-function _speculate(x; kwargs...)
+function _speculate(x, cache; kwargs...)
     object_id = objectid(x)
 
-    if @lock lock !(object_id in cache)
-        @lock lock push!(cache, object_id)
-        __speculate(x; kwargs...)
+    if !(object_id in cache)
+        push!(cache, object_id)
+        __speculate(x, cache; kwargs...)
     end
 end
 
@@ -182,25 +163,30 @@ end
 
 Generate and `precompile` a workload from the given value.
 
-To prevent infinite recurion, workloads are not repeated for the same input values.
-This is implemented by caching values by their `objectid`.
-Workloads may be repeated after calling [`empty_cache`](@ref).
+This function can be called repeatedly with the same value,
+which may be useful if there are new methods to precompile.
+Absent new methods to compile, the difference in elapsed time between an
+initial and subsequent calls to `speculate(::Any; background = false)`
+may be used to estimate the compilation time.
 
-The follows input types generate these corresponding workloads:
+# Input types
 
+- `Any`: Call `speculate` on the value's type.
 - `DataType`: Call `precompile` for each method with a concrete signature.
-    Recursively call `speculate` for each subtype.
+    Call `speculate` for each subtype.
 - `Function`: Call `precompile` for each method with a concrete signature.
-- `Module`: Recursively call `speculate` on values contained within it.
+- `Module`: Call `speculate` on each of its values.
 - `Type`: Do nothing.
-- `Union`: Recursively call `speculate` on each variant.
+- `Union`: Call `speculate` on each variant.
 
-The `background` specifies whether to precompile on a thread in the `:default` pool.
-The number of available threads can be determined using `Threads.nthreads(:default)`.
+# Keyword parameters
 
-The [`Verbosity`](@ref) specifies what logging statements to show.
-If this function is used as a precompilation workload,
-it should be set to [`none`](@ref) or [`warn`](@ref).
+- `background`: Specifies whether to precompile on a thread in the `:default` pool.
+    The number of available threads can be determined using `Threads.nthreads(:default)`.
+- `verbosity`: Specifies what logging statements to show.
+    If this function is used as a precompilation workload,
+    it should be set to [`none`](@ref) or [`warn`](@ref).
+    See also [`Verbosity`](@ref).
 
 !!! tip
     This function is safe for threads.
@@ -211,8 +197,9 @@ julia> speculate(Speculator)
 ```
 """
 function speculate(x; background::Bool = true, verbosity::Verbosity = warn)
-    background ?
-        (@spawn _speculate(x; background, verbosity)) : _speculate(x; background, verbosity)
+    cache = Set{UInt}()
+    background ? (@spawn _speculate(x, cache; background, verbosity)) :
+        _speculate(x, cache; background, verbosity)
     nothing
 end
 
