@@ -1,12 +1,28 @@
 
 module Speculator
 
+#=
+BUG: ```
+struct X{T} end
+speculate(X.body)
+```
+=#
+
 using Base: Threads.@spawn, active_repl, uniontypes
 using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
 export Verbosity, debug, none, review, warn, install_speculate_mode, speculate
+
+function check_cache(x, cache; kwargs...)
+    object_id = objectid(x)
+
+    if !(object_id in cache)
+        push!(cache, object_id)
+        _speculate(x, cache; kwargs...)
+    end
+end
 
 function log(f, background)
     flag = background && isdefined(Base, :active_repl)
@@ -27,7 +43,7 @@ precompile_method(x, sig::DataType; background, verbosity) =
     if !(Tuple <: sig)
         types = sig.types[(begin + 1):end]
 
-        if isconcretetype(Tuple{types...})
+        if all(isconcretetype, types)
             if precompile(x, ntuple(i -> types[i], length(types)))
                 verbosity == debug &&
                     log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
@@ -41,14 +57,21 @@ precompile_method(x, ::UnionAll; _...) = nothing
 signature(f, types) =
     string(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
 
-speculate_type(x::DataType, cache; kwargs...) = for subtype in subtypes(x)
-    _speculate(subtype, cache; kwargs...)
+speculate_cache(x::DataType, cache; kwargs...) = for type in x.name.cache
+    check_cache(type, cache; kwargs...)
 end
-speculate_type(x::UnionAll, cache; kwargs...) = for type in x.body.body.name.cache
-    _speculate(type, cache; kwargs...)
+# speculate_cache(x::UnionAll, cache; kwargs...) = speculate_cache(x.body, cache; kwargs...)
+speculate_cache(x::UnionAll, cache; kwargs...) = nothing
+speculate_cache(x::Union, cache; kwargs...) = for type in uniontypes(x)
+    speculate_cache(type, cache; kwargs...)
 end
+
+speculate_type(x::DataType, cache; kwargs...) = for type in subtypes(x)
+    check_cache(type, cache; kwargs...)
+end
+speculate_type(x::UnionAll, cache; kwargs...) = speculate_cache(x, cache; kwargs...)
 speculate_type(x::Union, cache; kwargs...) = for type in uniontypes(x)
-    _speculate(type, cache; kwargs...)
+    check_cache(type, cache; kwargs...)
 end
 
 """
@@ -161,24 +184,15 @@ function install_speculate_mode(; start_key = "\\M-s",
     @info "The `speculate` REPL mode has been installed. Press [$start_key] to enter and [Backspace] to exit."
 end
 
-__speculate(x::Function, cache; kwargs...) = precompile_methods(x; kwargs...)
-__speculate(x::Module, cache; kwargs...) = for name in names(x; all = true)
-    isdefined(x, name) && _speculate(getfield(x, name), cache; kwargs...)
+_speculate(x::Function, cache; kwargs...) = precompile_methods(x; kwargs...)
+_speculate(x::Module, cache; kwargs...) = for name in names(x; all = true)
+    isdefined(x, name) && check_cache(getfield(x, name), cache; kwargs...)
 end
-function __speculate(x::Union{DataType, UnionAll, Union}, cache; kwargs...)
+function _speculate(x::Union{DataType, UnionAll, Union}, cache; kwargs...)
     precompile_methods(x; kwargs...)
     speculate_type(x, cache; kwargs...)
 end
-__speculate(::T, cache; kwargs...) where T = _speculate(T, cache; kwargs...)
-
-function _speculate(x, cache; kwargs...)
-    object_id = objectid(x)
-
-    if !(object_id in cache)
-        push!(cache, object_id)
-        __speculate(x, cache; kwargs...)
-    end
-end
+_speculate(::T, cache; kwargs...) where T = check_cache(T, cache; kwargs...)
 
 """
     speculate(::Any; background::Bool = true, verbosity::Verbosity = warn)
@@ -221,7 +235,7 @@ julia> speculate(Speculator)
 function speculate(x; background::Bool = true, verbosity::Verbosity = warn)
     function f()
         cache = Set{UInt}()
-        _speculate(x, cache; background, verbosity)
+        check_cache(x, cache; background, verbosity)
         if verbosity ≥ review
             log(() -> (@info "Speculated `$(length(cache))` values"), background)
         end
