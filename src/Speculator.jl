@@ -48,10 +48,10 @@ precompile_method(x, sig::DataType; background, verbosity, kwargs...) =
             elseif verbosity > none
                 log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, concrete_types))`"), background)
             end
+        end
 
-            for concrete_type in concrete_types
-                check_cache(concrete_type; background, verbosity, kwargs...)
-            end
+        for parameter_type in parameter_types
+            check_cache(parameter_type; background, verbosity, kwargs...)
         end
     end
 precompile_method(x, ::UnionAll; _...) = nothing
@@ -70,7 +70,7 @@ function speculate_cached(x::Union{DataType, Union}; kwargs...)
         check_cache(type; kwargs...)
     end
 end
-speculate_cached(x::UnionAll; kwargs...) = nothing
+speculate_cached(x::UnionAll; kwargs...) = nothing # Performance optimization
 speculate_cached(::T; kwargs...) where T = check_cache(T; kwargs...)
 
 """
@@ -196,12 +196,12 @@ may be used to estimate the compilation time.
 
 # Input types
 
-- `Any`: Call `speculate` for the value's type.
-- `DataType`: Call `precompile` for each method with a concrete signature.
-    Call `speculate` for each type in the signature and for each subtype.
-- `Function`: Call `precompile` for each method.
+- `Any`: Call `speculate` for the value's type. TODO: callable objects.
+- `DataType`: Call `speculate` for each of its subtypes and for each type in each of its
+    method's signature. Call `precompile` for each method with a concrete signature.
+- `Function`: Call `precompile` for each of its methods.
 - `Module`: Call `speculate` for each of its values.
-- `Union`: Call `speculate` for each variant.
+- `Union`: Call `speculate` for each of its variants.
 
 # Keyword parameters
 
@@ -211,9 +211,6 @@ may be used to estimate the compilation time.
     If this function is used as a precompilation workload,
     it should be set to [`none`](@ref) or [`warn`](@ref).
     See also [`Verbosity`](@ref).
-
-!!! tip
-    This function is safe for threads.
 
 # Examples
 ```jldoctest
