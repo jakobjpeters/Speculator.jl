@@ -8,14 +8,16 @@ using ReplMaker: complete_julia, initrepl
 
 export Verbosity, debug, none, review, warn, install_speculate_mode, speculate
 
-function check_cache(x; cache, kwargs...)
+function cache(f, x; cache, kwargs...)
     object_id = objectid(x)
 
     if !(object_id in cache)
         push!(cache, object_id)
-        speculate_cached(x; cache, kwargs...)
+        f(x; cache, kwargs...)
     end
 end
+
+check_cache(x; kwargs...) = cache((x; kwargs...) -> speculate_cached(x; kwargs...), x; kwargs...)
 
 leaf_types(x::DataType) = subtypes(x)
 leaf_types(x::Union) = uniontypes(x)
@@ -29,6 +31,9 @@ function log(f, background)
         refresh_line(active_repl.mistate)
     end
 end
+
+maybe_check_cache(::Nothing; _...) = nothing
+maybe_check_cache(x; kwargs...) = check_cache(x; kwargs...)
 
 precompile_methods(x; kwargs...) =
     for method in methods(x)
@@ -70,8 +75,18 @@ function speculate_cached(x::Union{DataType, Union}; kwargs...)
         check_cache(type; kwargs...)
     end
 end
-speculate_cached(x::UnionAll; kwargs...) = nothing # Performance optimization
-speculate_cached(::T; kwargs...) where T = check_cache(T; kwargs...)
+speculate_cached(x::UnionAll; kwargs...) = speculate_union_all(x; kwargs...)
+function speculate_cached(x::T; kwargs...) where T
+    check_cache(T; kwargs...)
+    precompile_methods(x)
+end
+
+speculate_union_all(x::DataType; kwargs...) = cache((x; kwargs...) -> foreach(
+    maybe_type -> maybe_check_cache(maybe_type; kwargs...), x.name.cache), x; kwargs...)
+speculate_union_all(x::UnionAll; kwargs...) =
+    cache((x; kwargs...) -> speculate_union_all(x.body; kwargs...), x; kwargs...)
+speculate_union_all(x::Union; kwargs...) = cache((x; kwargs...) -> foreach(
+    type -> speculate_union_all(type; kwargs...), uniontypes(x)), x; kwargs...)
 
 """
     Verbosity
