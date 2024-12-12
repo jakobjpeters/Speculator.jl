@@ -25,63 +25,70 @@ function log(f, background)
     end
 end
 
+precompile_concrete(x, types; background, count, verbosity, _...) =
+    if precompile(x, types)
+        debug in verbosity &&
+            log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
+        count[] += 1
+    elseif warn in verbosity
+        log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
+    end
+
 precompile_methods(x; kwargs...) = for method in methods(x)
     precompile_method(x, method.nospecialize, method.sig; kwargs...)
 end
 
-precompile_method(x, nospecialize, sig::DataType; background, count, target, verbosity, kwargs...) =
+precompile_method(x, nospecialize, sig::DataType; target, kwargs...) =
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
 
-        if all(is_not_vararg, parameter_types)
-            for concrete_types in product(map(eachindex(parameter_types)) do i
-                branches, leaves = Type[parameter_types[i]], DataType[]
+        if abstract_methods in target
+            if all(is_not_vararg, parameter_types)
+                for concrete_types in product(map(eachindex(parameter_types)) do i
+                    branches, leaves = Type[parameter_types[i]], DataType[]
 
-                if (nospecialize >> (i - 1)) & 1 == 1
-                    while !isempty(branches)
-                        branch = pop!(branches)
+                    if (nospecialize >> (i - 1)) & 1 == 1
+                        while !isempty(branches)
+                            branch = pop!(branches)
 
-                        if isconcretetype(branch)
-                            push!(leaves, branch)
-                            break
-                        else append!(branches, leaf_types(branch, target))
+                            if isconcretetype(branch)
+                                push!(leaves, branch)
+                                break
+                            else append!(branches, leaf_types(branch, target))
+                            end
+                        end
+                    else
+                        while !isempty(branches)
+                            branch = pop!(branches)
+                            isconcretetype(branch) ? push!(leaves, branch) :
+                                append!(branches, leaf_types(branch, target))
                         end
                     end
-                else
-                    while !isempty(branches)
-                        branch = pop!(branches)
-                        isconcretetype(branch) ? push!(leaves, branch) :
-                            append!(branches, leaf_types(branch, target))
-                    end
-                end
 
-                leaves
-            end...)
-                if precompile(x, concrete_types)
-                    debug in verbosity &&
-                        log(() -> (@info "Precompiled `$(signature(x, concrete_types))`"), background)
-                    count[] += 1
-                elseif warn in verbosity
-                    log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, concrete_types))`"), background)
+                    leaves
+                end...)
+                    precompile_concrete(x, concrete_types; kwargs...)
                 end
             end
+        elseif all(isconcretetype, parameter_types)
+            precompile_concrete(x, (parameter_types...,); kwargs...)
         end
 
         if method_types in target
             for parameter_type in parameter_types
-                check_cache(parameter_type; background, count, target, verbosity, kwargs...)
+                check_cache(parameter_type; target, kwargs...)
             end
         end
     end
 precompile_method(x, nospecialize, ::UnionAll; _...) = nothing
 
-signature(f, types) =
+signature((@nospecialize f), types) =
     signature(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
-signature(f::Union{Function, Type}) = repr(f)
-signature(::T) where T = "(::" * repr(T) * ')'
+signature(@nospecialize f::Union{Function, Type}) = repr(f)
+signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
 # TODO: `methodswith`
-speculate_cached(x::Function; kwargs...) = precompile_methods(x; kwargs...)
+speculate_cached(@nospecialize x::Function; kwargs...) = precompile_methods(x; kwargs...)
 speculate_cached(x::Module; target, kwargs...) =
     for name in names(x; all = all_names in target, imported = imported_names in target)
         isdefined(x, name) && check_cache(getfield(x, name); target, kwargs...)

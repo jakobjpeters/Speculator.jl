@@ -12,8 +12,9 @@ include("utilities.jl")
 include("verbosities.jl")
 
 export Target, Verbosity,
-    abstract_types, all_names, callable_objects, debug, none, review, union_types, warn,
-    imported_names, install_speculate_mode, method_types, speculate, union_all_caches
+    abstract_methods, abstract_types, all_names, callable_objects,
+    debug, none, review, union_types, warn, imported_names,
+    install_speculate_mode, method_types, speculate, union_all_caches
 
 """
     install_speculate_mode(;
@@ -84,16 +85,16 @@ julia> speculate(Speculator)
 ```
 """
 function speculate(x;
-    background::Bool = true, target::Target = abstracts | unions, verbosity::Verbosity = warn)
+    background::Bool = true, target::Target = abstract_types | union_types, verbosity::Verbosity = warn)
     function f()
         cache, count = Set{UInt}(), Ref(0)
         callable_cache = copy(cache)
 
-        check_cache(x; all_names, background, cache, callable_cache,
-            count, imported_names, target, verbosity)
+        elapsed = @elapsed check_cache(x; all_names, background, cache,
+            callable_cache, count, imported_names, target, verbosity)
 
         if review in verbosity
-            log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values"), background)
+            log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
         end
     end
 

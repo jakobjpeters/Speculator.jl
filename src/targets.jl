@@ -29,8 +29,8 @@ struct Target
     end
 
     for (i, name) in enumerate([
-        :abstract_types, :all_names, :union_all_caches,
-        :callable_objects, :imported_names, :method_types, :union_types
+        :abstract_methods, :abstract_types, :all_names, :callable_objects,
+        :imported_names, :method_types, :union_all_caches, :union_types
     ])
         @eval begin
             const $name = $target($(2 ^ (i - 1)))
