@@ -86,11 +86,12 @@ julia> speculate(Speculator)
 """
 function speculate(x;
     background::Bool = true,
+    ignore = [],
     target::Union{Target, Nothing} = nothing,
     verbosity::Union{Verbosity, Nothing} = warn
 )
     function f()
-        cache, count = Set{UInt}(), Ref(0)
+        cache, count = Set(Iterators.map(objectid, ignore)), Ref(0)
         callable_cache = copy(cache)
 
         elapsed = @elapsed check_cache(x;
@@ -105,6 +106,7 @@ function speculate(x;
     background ? (@spawn f(); nothing) : f()
 end
 
-speculate(Speculator)
+speculate(Speculator;
+    target = abstract_methods | abstract_subtypes | all_names | callable_objects | union_types)
 
 end # Speculator
