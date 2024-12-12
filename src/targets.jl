@@ -44,7 +44,11 @@ false
 @doc """
     abstract_methods
 
-A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
+A flag of [`Target`](@ref) which specifies that [`speculate`](@ref) will use
+the cartesian product of concrete types of each method parameter in the precompilation workload.
+
+Requires at least one of [`abstract_subtypes`](@ref), [`any_subtypes`](@ref),
+[`function_subtypes`](@ref), [`union_all_caches`](@ref), or [`union_types`](@ref).
 
 # Examples
 
@@ -58,7 +62,7 @@ abstract_methods::Target
     abstract_subtypes
 
 A flag of [`Target`](@ref) which specifies that [`speculate`](@ref) will use
-the cartesian product of concrete types of each method parameter in the precompilation workload.
+the subtypes of abstract types that are not `Function` and `Any` in the precompilation workload.
 
 # Examples
 

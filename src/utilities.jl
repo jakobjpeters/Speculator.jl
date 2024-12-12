@@ -82,9 +82,9 @@ filter_same(x) = filter(subtype -> !(x <: subtype), subtypes(x))
 is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
 
+leaf_types(x::DataType, target) = abstract_subtypes ⊆ target ? filter_same(x) : []
 leaf_types(x::Type{Any}, target) = any_subtypes ⊆ target ? filter_same(x) : []
 leaf_types(x::Type{Function}, target) = function_subtypes ⊆ target ? subtypes(x) : []
-leaf_types(x::DataType, target) = abstract_subtypes ⊆ target ? filter_same(x) : []
 leaf_types(x::UnionAll, target) = union_all_caches ⊆ target ? union_all_cache!([], target, x) : []
 leaf_types(x::Union, target) = union_types ⊆ target ? uniontypes(x) : []
 
@@ -186,6 +186,10 @@ end
 union_all_cache!(types, _, x::DataType) =
     append!(types, Iterators.filter(!isnothing, x.name.cache))
 union_all_cache!(types, target, x::UnionAll) = union_all_cache!(types, target, x.body)
-union_all_cache!(types, target, x::Union) = for type in leaf_types(x, target)
-    union_all_cache!(types, target, type)
+function union_all_cache!(types, target, x::Union)
+    for type in leaf_types(x, target)
+        union_all_cache!(types, target, type)
+    end
+
+    types
 end
