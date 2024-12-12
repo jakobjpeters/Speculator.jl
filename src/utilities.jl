@@ -10,10 +10,10 @@ check_cache(x; cache, kwargs...) = cache!((x; kwargs...) -> speculate_cached(x; 
 is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
 
-leaf_types(x::DataType, target) = abstracts in target && !(Any <: x) ? subtypes(x) : []
+leaf_types(x::DataType, target) = abstract_types in target && !(Any <: x) ? subtypes(x) : []
 leaf_types(x::UnionAll, target) =
-    caches in target ? filter(!isnothing, union_all_cache!([], target, x)) : []
-leaf_types(x::Union, target) = unions in target ? uniontypes(x) : []
+    union_all_caches in target ? filter(!isnothing, union_all_cache!([], target, x)) : []
+leaf_types(x::Union, target) = union_types in target ? uniontypes(x) : []
 
 function log(f, background)
     flag = background && isdefined(Base, :active_repl)
@@ -67,7 +67,7 @@ precompile_method(x, nospecialize, sig::DataType; background, count, target, ver
             end
         end
 
-        if parameters in target
+        if method_types in target
             for parameter_type in parameter_types
                 check_cache(parameter_type; background, count, target, verbosity, kwargs...)
             end
@@ -95,7 +95,7 @@ function speculate_cached(x::Union{DataType, UnionAll, Union}; target, kwargs...
 end
 function speculate_cached(x::T; cache, callable_cache, target, kwargs...) where T
     object_id = objectid(T)
-    callables in target && cache!((x; kwargs...) -> precompile_methods(x; kwargs...),
+    callable_objects in target && cache!((x; kwargs...) -> precompile_methods(x; kwargs...),
         callable_cache, object_id, x; cache, callable_cache, target, kwargs...)
     cache!((x; kwargs...) -> speculate_cached(x; kwargs...),
         cache, object_id, T; cache, callable_cache, target, kwargs...)

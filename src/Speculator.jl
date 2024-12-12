@@ -12,8 +12,8 @@ include("utilities.jl")
 include("verbosities.jl")
 
 export Target, Verbosity,
-    abstracts, all_names, caches, callables, debug, none, parameters,
-    review, unions, warn, imported_names, install_speculate_mode, speculate
+    abstract_types, all_names, callable_objects, debug, none, review, union_types, warn,
+    imported_names, install_speculate_mode, method_types, speculate, union_all_caches
 
 """
     install_speculate_mode(;

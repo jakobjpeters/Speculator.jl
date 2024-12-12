@@ -29,7 +29,9 @@ struct Target
     end
 
     for (i, name) in enumerate([
-        :abstracts, :all_names, :caches, :callables, :imported_names, :parameters, :unions])
+        :abstract_types, :all_names, :union_all_caches,
+        :callable_objects, :imported_names, :method_types, :union_types
+    ])
         @eval begin
             const $name = $target($(2 ^ (i - 1)))
             push!(targets, $name => $(QuoteNode(name)))
