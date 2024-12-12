@@ -127,9 +127,9 @@ as an estimate of the runtime of calls to `precompile`.
 See also [`target`](@ref).
 
 !!! info
-    This function should be used once at the beginning of a session.
     Previous calls to `speculate` and `precompile` may underestimate the
     runtime if there is overlap between the previous and current workloads.
+    Therefore, this function should be used once at the beginning of a session.
 """
 function time_precompilation(x; ignore = default_ignore, target = default_target)
     f(dry) = @elapsed speculate(x; dry, ignore, target, background = false, verbosity = nothing)

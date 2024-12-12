@@ -45,34 +45,46 @@ macro flag(type, names...)
     end)
 end
 
-cache!(f, cache, object_id, @nospecialize x; kwargs...) = if !(object_id in cache)
-    push!(cache, object_id)
-    f(x; kwargs...)
+function cache!(f, cache, object_id, @nospecialize x; kwargs...)
+    @nospecialize
+    if !(object_id in cache)
+        push!(cache, object_id)
+        f(x; kwargs...)
+    end
 end
 
-check_cache(x::Union{DataType, Function, Module, UnionAll, Union}; cache, kwargs...) = cache!(
-    (x; kwargs...) -> speculate_cached(x; kwargs...), cache, objectid(x), x; cache, kwargs...)
-function check_cache(@nospecialize x::T; cache, callable_cache, target, kwargs...) where T
-    object_id = objectid(T)
-    callable_objects in target && cache!((x; kwargs...) -> precompile_methods(x; kwargs...),
-        callable_cache, object_id, x; cache, callable_cache, target, kwargs...)
-    cache!((x; kwargs...) -> speculate_cached(x; kwargs...),
-        cache, object_id, T; cache, callable_cache, target, kwargs...)
+function check_cache(x::Union{DataType, Function, Module, UnionAll, Union}; cache, kwargs...)
+    @nospecialize
+    cache!((x; kwargs...) -> begin
+        @nospecialize
+        speculate_cached(x; kwargs...)
+    end, cache, objectid(x), x; cache, kwargs...)
 end
+function check_cache(x::T; cache, callable_cache, target, kwargs...) where T
+    @nospecialize
+    object_id = objectid(T)
+    callable_objects in target && cache!((x; kwargs...) -> begin
+        @nospecialize
+        precompile_methods(x; kwargs...)
+    end, callable_cache, object_id, x; cache, callable_cache, target, kwargs...)
+    cache!((x; kwargs...) -> begin
+        @nospecialize
+        speculate_cached(x; kwargs...)
+    end, cache, object_id, T; cache, callable_cache, target, kwargs...)
+end
+
+filter_same(x) = filter(subtype -> !(x <: subtype), subtypes(x))
 
 is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
 
-leaf_types(x::Type{Any}, target) =
-    any_subtypes in target ? filter(subtype -> !(x <: subtype), subtypes(x)) : []
-leaf_types(x::Type{Function}, target) =
-    function_subtypes in target ? subtypes(x) : []
-leaf_types(x::DataType, target) =
-    abstract_subtypes in target ? filter(subtype -> !(x <: subtype), subtypes(x)) : []
+leaf_types(x::Type{Any}, target) = any_subtypes in target ? filter_same(x) : []
+leaf_types(x::Type{Function}, target) = function_subtypes in target ? subtypes(x) : []
+leaf_types(x::DataType, target) = abstract_subtypes in target ? filter_same(x) : []
 leaf_types(x::UnionAll, target) = union_all_caches in target ? union_all_cache!([], target, x) : []
 leaf_types(x::Union, target) = union_types in target ? uniontypes(x) : []
 
-function log(f, background)
+function log((@nospecialize f), background)
     flag = background && isdefined(Base, :active_repl)
     flag && print(stderr, "\33[2K\r\33[A")
     f()
@@ -82,7 +94,8 @@ function log(f, background)
     end
 end
 
-precompile_concrete(x, types; background, count, dry, verbosity, _...) =
+function precompile_concrete(x, types; background, count, dry, verbosity, _...)
+    @nospecialize
     if dry || precompile(x, types)
         debug in verbosity &&
             log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
@@ -90,12 +103,17 @@ precompile_concrete(x, types; background, count, dry, verbosity, _...) =
     elseif warn in verbosity
         log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
     end
-
-precompile_methods(x; kwargs...) = for method in methods(x)
-    precompile_method(x, method.nospecialize, method.sig; kwargs...)
 end
 
-precompile_method(x, nospecialize, sig::DataType; target, kwargs...) =
+function precompile_methods(x; kwargs...)
+    @nospecialize
+    for method in methods(x)
+        precompile_method(x, method.nospecialize, method.sig; kwargs...)
+    end
+end
+
+function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
+    @nospecialize
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
 
@@ -130,20 +148,29 @@ precompile_method(x, nospecialize, sig::DataType; target, kwargs...) =
             end
         end
     end
-precompile_method(x, nospecialize, ::UnionAll; _...) = nothing
+end
+precompile_method(x, nospecialize, ::UnionAll; _...) = @nospecialize
 
-signature(x, types) =
+function signature(x, types)
+    @nospecialize
     signature(x) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
-signature(x::Union{Function, Type}) = repr(x)
+end
+signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
 # TODO: `methodswith`
-speculate_cached(x::Function; kwargs...) = precompile_methods(x; kwargs...)
-speculate_cached(x::Module; target, kwargs...) =
+function speculate_cached(x::Function; kwargs...)
+    @nospecialize
+    precompile_methods(x; kwargs...)
+end
+function speculate_cached(x::Module; target, kwargs...)
+    @nospecialize
     for name in names(x; all = all_names in target, imported = imported_names in target)
         isdefined(x, name) && check_cache(getfield(x, name); target, kwargs...)
     end
+end
 function speculate_cached(x::Union{DataType, UnionAll, Union}; target, kwargs...)
+    @nospecialize
     precompile_methods(x; target, kwargs...)
 
     for type in leaf_types(x, target)
