@@ -1,14 +1,11 @@
 
-function cache(f, x; cache, kwargs...)
-    object_id = objectid(x)
-
-    if !(object_id in cache)
-        push!(cache, object_id)
-        f(x; cache, kwargs...)
-    end
+cache!(f, cache, object_id, x; kwargs...) = if !(object_id in cache)
+    push!(cache, object_id)
+    f(x; kwargs...)
 end
 
-check_cache(x; kwargs...) = cache((x; kwargs...) -> speculate_cached(x; kwargs...), x; kwargs...)
+check_cache(x; cache, kwargs...) = cache!((x; kwargs...) -> speculate_cached(x; kwargs...),
+    cache, objectid(x), x; cache, kwargs...)
 
 is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
@@ -32,12 +29,12 @@ precompile_methods(x; kwargs...) = for method in methods(x)
     precompile_method(x, method.nospecialize, method.sig; kwargs...)
 end
 
-precompile_method(x, nospecialize, sig::DataType; background, target, verbosity, kwargs...) =
+precompile_method(x, nospecialize, sig::DataType; background, count, target, verbosity, kwargs...) =
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
 
         if all(is_not_vararg, parameter_types)
-            for concrete_types in Iterators.product(map(eachindex(parameter_types)) do i
+            for concrete_types in product(map(eachindex(parameter_types)) do i
                 branches, leaves = Type[parameter_types[i]], DataType[]
 
                 if (nospecialize >> (i - 1)) & 1 == 1
@@ -63,6 +60,7 @@ precompile_method(x, nospecialize, sig::DataType; background, target, verbosity,
                 if precompile(x, concrete_types)
                     debug in verbosity &&
                         log(() -> (@info "Precompiled `$(signature(x, concrete_types))`"), background)
+                    count[] += 1
                 elseif warn in verbosity
                     log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, concrete_types))`"), background)
                 end
@@ -71,14 +69,16 @@ precompile_method(x, nospecialize, sig::DataType; background, target, verbosity,
 
         if parameters in target
             for parameter_type in parameter_types
-                check_cache(parameter_type; background, target, verbosity, kwargs...)
+                check_cache(parameter_type; background, count, target, verbosity, kwargs...)
             end
         end
     end
 precompile_method(x, nospecialize, ::UnionAll; _...) = nothing
 
 signature(f, types) =
-    repr(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
+    signature(f) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
+signature(f::Union{Function, Type}) = repr(f)
+signature(::T) where T = "(::" * repr(T) * ')'
 
 # TODO: `methodswith`
 speculate_cached(x::Function; kwargs...) = precompile_methods(x; kwargs...)
@@ -93,10 +93,12 @@ function speculate_cached(x::Union{DataType, UnionAll, Union}; target, kwargs...
         check_cache(type; target, kwargs...)
     end
 end
-function speculate_cached(x::T; target, kwargs...) where T
-    check_cache(T; target, kwargs...)
-    # TODO: distinct cache for `callables`
-    if callables in target precompile_methods(x) end
+function speculate_cached(x::T; cache, callable_cache, target, kwargs...) where T
+    object_id = objectid(T)
+    callables in target && cache!((x; kwargs...) -> precompile_methods(x; kwargs...),
+        callable_cache, object_id, x; cache, callable_cache, target, kwargs...)
+    cache!((x; kwargs...) -> speculate_cached(x; kwargs...),
+        cache, object_id, T; cache, callable_cache, target, kwargs...)
 end
 
 union_all_cache!(types, _, x::DataType) = append!(types, Iterators.filter(!isnothing, x.name.cache))

@@ -2,7 +2,7 @@
 module Speculator
 
 import Base: |, in, show
-using Base: Threads.@spawn, active_repl, uniontypes
+using Base: Threads.@spawn, active_repl, Iterators.product, uniontypes
 using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
@@ -86,11 +86,14 @@ julia> speculate(Speculator)
 function speculate(x;
     background::Bool = true, target::Target = abstracts | unions, verbosity::Verbosity = warn)
     function f()
-        cache = Set{UInt}()
-        check_cache(x; all_names, background, cache, imported_names, target, verbosity)
+        cache, count = Set{UInt}(), Ref(0)
+        callable_cache = copy(cache)
+
+        check_cache(x; all_names, background, cache, callable_cache,
+            count, imported_names, target, verbosity)
 
         if review in verbosity
-            log(() -> (@info "Speculated `$(length(cache))` values"), background)
+            log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values"), background)
         end
     end
 
