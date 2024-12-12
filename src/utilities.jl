@@ -130,7 +130,8 @@ function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
                     while !isempty(branches)
                         branch = pop!(branches)
 
-                        if isconcretetype(branch)
+                        if isconcretetype(branch) &&
+                            !any(type -> type <: branch, [DataType, UnionAll, Union])
                             push!(leaves, branch)
                             no_specialize && break
                         else append!(branches, leaf_types(branch, target))
