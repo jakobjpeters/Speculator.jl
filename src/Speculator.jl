@@ -7,10 +7,13 @@ using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
+include("targets.jl")
 include("utilities.jl")
 include("verbosities.jl")
 
-export Verbosity, debug, none, review, warn, install_speculate_mode, speculate
+export Target, Verbosity,
+    abstracts, all_names, caches, callables, debug, none, parameters,
+    review, unions, warn, imported_names, install_speculate_mode, speculate
 
 """
     install_speculate_mode(;
@@ -80,10 +83,11 @@ may be used to estimate the compilation time.
 julia> speculate(Speculator)
 ```
 """
-function speculate(x; background::Bool = true, verbosity::Verbosity = warn)
+function speculate(x;
+    background::Bool = true, target::Target = abstracts | unions, verbosity::Verbosity = warn)
     function f()
         cache = Set{UInt}()
-        check_cache(x; background, cache, verbosity)
+        check_cache(x; all_names, background, cache, imported_names, target, verbosity)
 
         if review in verbosity
             log(() -> (@info "Speculated `$(length(cache))` values"), background)
