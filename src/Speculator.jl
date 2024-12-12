@@ -14,7 +14,11 @@ include("verbosities.jl")
 export Target, Verbosity,
     abstract_methods, abstract_subtypes, all_names, any_subtypes, callable_objects,
     debug, function_subtypes, review, union_types, warn, imported_names,
-    install_speculate_mode, method_types, speculate, union_all_caches
+    install_speculate_mode, method_types, speculate, time_precompilation, union_all_caches
+
+const default_ignore = []
+
+const default_target = nothing
 
 """
     install_speculate_mode(;
@@ -86,24 +90,51 @@ julia> speculate(Speculator)
 """
 function speculate(x;
     background::Bool = true,
-    ignore = [],
-    target::Union{Target, Nothing} = nothing,
+    dry::Bool = false,
+    ignore = default_ignore,
+    target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
     function f()
         cache, count = Set(Iterators.map(objectid, ignore)), Ref(0)
-        callable_cache = copy(cache)
+        callable_cache, _verbosity = copy(cache), Speculator.verbosity(verbosity)
 
         elapsed = @elapsed check_cache(x;
-            all_names, background, cache, callable_cache, count, imported_names,
-        target = Speculator.target(target), verbosity = Speculator.verbosity(verbosity))
+            all_names, background, cache, callable_cache, count, dry, imported_names,
+        target = Speculator.target(target), verbosity = _verbosity)
 
-        if review in verbosity
+        if review in _verbosity
             log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
         end
     end
 
     background ? (@spawn f(); nothing) : f()
+end
+
+"""
+    time_precompilation(::Any; ignore = $default_ignore, target::$(typeof(default_target)) = $default_target)
+
+Estimate the compilation time saved by [`speculate`](@ref).
+
+This function runs
+`speculate(::Any;\u00A0ignore,\u00A0target,\u00A0background\u00A0=\u00A0false,\u00A0verbosity\u00A0=\u00A0nothing)`
+sequentially with `dry = true` to compile methods in Speculator.jl, `dry = false`
+to measure the runtime of methods in Speculator.jl and calls to `precompile`,
+and `dry = true` to measure the runtime of methods in Speculator.jl.
+The difference between the second and third runs is returned
+as an estimate of the runtime of calls to `precompile`.
+
+See also [`target`](@ref).
+
+!!! info
+    This function should be used once at the beginning of a session.
+    Previous calls to `speculate` and `precompile` may underestimate the
+    runtime if there is overlap between the previous and current workloads.
+"""
+function time_precompilation(x; ignore = default_ignore, target = default_target)
+    f(dry) = @elapsed speculate(x; dry, ignore, target, background = false, verbosity = nothing)
+    f(true)
+    f(false) - f(true)
 end
 
 speculate(Speculator;

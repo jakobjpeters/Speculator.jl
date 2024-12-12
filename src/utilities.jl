@@ -82,8 +82,8 @@ function log(f, background)
     end
 end
 
-precompile_concrete(x, types; background, count, verbosity, _...) =
-    if precompile(x, types)
+precompile_concrete(x, types; background, count, dry, verbosity, _...) =
+    if dry || precompile(x, types)
         debug in verbosity &&
             log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
         count[] += 1
