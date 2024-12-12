@@ -1,7 +1,6 @@
 
 module Speculator
 
-import Base: |, in, show
 using Base: Threads.@spawn, active_repl, Iterators.product, uniontypes
 using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
@@ -15,10 +14,6 @@ export Target, Verbosity,
     abstract_methods, abstract_subtypes, all_names, any_subtypes, callable_objects,
     debug, function_subtypes, review, union_types, warn, imported_names,
     install_speculate_mode, method_types, speculate, time_precompilation, union_all_caches
-
-const default_ignore = []
-
-const default_target = nothing
 
 """
     install_speculate_mode(;
@@ -55,32 +50,30 @@ function install_speculate_mode(; start_key = "\\M-s",
 end
 
 """
-    speculate(::Any; abstract::Bool = false, background::Bool = true, verbosity::Verbosity = warn)
+    speculate(::Any;
+        background::Bool = true,
+        dry::Bool = false,
+        ignore = $default_ignore,
+        target::Union{Target, Nothing} = $default_target,
+        verbosity::Union{Verbosity, Nothing} = warn
+    )
 
 Generate and `precompile` a workload from the given value.
 
 This function can be called repeatedly with the same value,
 which may be useful if there are new methods to precompile.
-Absent new methods to compile, the difference in elapsed time between an
-initial and subsequent calls to `speculate(::Any; background = false)`
-may be used to estimate the compilation time.
-
-# Input types
-
-- `Any`: Call `speculate` for the value's type. TODO: callable objects.
-- `DataType`: Call `speculate` for each of its subtypes and for each type in each of its
-    method's signature. Call `precompile` for each method with a concrete signature.
-- `Function`: Call `precompile` for each of its methods.
-- `Module`: Call `speculate` for each of its values.
-- `Union`: Call `speculate` for each of its variants.
 
 # Keyword parameters
 
 - `background`: Specifies whether to precompile on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
+- `dry`: Specifies whether to actually run `precompile`.
+    This is useful for [`time_precompilation`](@ref).
+- `ignore`: An iterable of values that will not be speculated.
+- `target`: Specifies what methods to precompile. See also [`Target`](@ref).
 - `verbosity`: Specifies what logging statements to show.
     If this function is used as a precompilation workload,
-    it should be set to [`none`](@ref) or [`warn`](@ref).
+    this should be set to `nothing` or [`warn`](@ref).
     See also [`Verbosity`](@ref).
 
 # Examples
@@ -103,7 +96,7 @@ function speculate(x;
             all_names, background, cache, callable_cache, count, dry, imported_names,
         target = Speculator.target(target), verbosity = _verbosity)
 
-        if review in _verbosity
+        if review ⊆ _verbosity
             log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
         end
     end

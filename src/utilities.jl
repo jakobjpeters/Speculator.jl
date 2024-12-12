@@ -1,4 +1,8 @@
 
+const default_ignore = []
+
+const default_target = nothing
+
 macro flag(type, names...)
     name = string(type)
     constructor_name, type_name = Symbol(lowercasefirst(name)), Symbol(name)
@@ -15,15 +19,15 @@ macro flag(type, names...)
 
             Base.:|(f::$type_name, _f::$type_name) = new(f.value | _f.value)
 
-            _in(f, _f) = f == (f & _f)
+            is_subset(f, _f) = f == (f & _f)
 
-            Base.in(f::$type_name, _f::$type_name) = _in(f.value, _f.value)
+            Base.issubset(f::$type_name, _f::$type_name) = is_subset(f.value, _f.value)
 
             function Base.show(io::IO, flag::$type_name)
                 value, names = flag.value, Symbol[]
 
                 for (_value, name) in $values_names
-                    _in(_value, value) && push!(names, name)
+                    is_subset(_value, value) && push!(names, name)
                 end
 
                 n = length(names)
@@ -63,7 +67,7 @@ end
 function check_cache(x::T; cache, callable_cache, target, kwargs...) where T
     @nospecialize
     object_id = objectid(T)
-    callable_objects in target && cache!((x; kwargs...) -> begin
+    callable_objects ⊆ target && cache!((x; kwargs...) -> begin
         @nospecialize
         precompile_methods(x; kwargs...)
     end, callable_cache, object_id, x; cache, callable_cache, target, kwargs...)
@@ -78,11 +82,11 @@ filter_same(x) = filter(subtype -> !(x <: subtype), subtypes(x))
 is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
 
-leaf_types(x::Type{Any}, target) = any_subtypes in target ? filter_same(x) : []
-leaf_types(x::Type{Function}, target) = function_subtypes in target ? subtypes(x) : []
-leaf_types(x::DataType, target) = abstract_subtypes in target ? filter_same(x) : []
-leaf_types(x::UnionAll, target) = union_all_caches in target ? union_all_cache!([], target, x) : []
-leaf_types(x::Union, target) = union_types in target ? uniontypes(x) : []
+leaf_types(x::Type{Any}, target) = any_subtypes ⊆ target ? filter_same(x) : []
+leaf_types(x::Type{Function}, target) = function_subtypes ⊆ target ? subtypes(x) : []
+leaf_types(x::DataType, target) = abstract_subtypes ⊆ target ? filter_same(x) : []
+leaf_types(x::UnionAll, target) = union_all_caches ⊆ target ? union_all_cache!([], target, x) : []
+leaf_types(x::Union, target) = union_types ⊆ target ? uniontypes(x) : []
 
 function log((@nospecialize f), background)
     flag = background && isdefined(Base, :active_repl)
@@ -97,10 +101,10 @@ end
 function precompile_concrete(x, types; background, count, dry, verbosity, _...)
     @nospecialize
     if dry || precompile(x, types)
-        debug in verbosity &&
+        debug ⊆ verbosity &&
             log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
         count[] += 1
-    elseif warn in verbosity
+    elseif warn ⊆ verbosity
         log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
     end
 end
@@ -117,7 +121,7 @@ function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
 
-        if abstract_methods in target
+        if abstract_methods ⊆ target
             if all(is_not_vararg, parameter_types)
                 for concrete_types in product(map(eachindex(parameter_types)) do i
                     branches, leaves = Type[parameter_types[i]], DataType[]
@@ -142,7 +146,7 @@ function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
             precompile_concrete(x, (parameter_types...,); kwargs...)
         end
 
-        if method_types in target
+        if method_types ⊆ target
             for parameter_type in parameter_types
                 check_cache(parameter_type; target, kwargs...)
             end
@@ -165,7 +169,7 @@ function speculate_cached(x::Function; kwargs...)
 end
 function speculate_cached(x::Module; target, kwargs...)
     @nospecialize
-    for name in names(x; all = all_names in target, imported = imported_names in target)
+    for name in names(x; all = all_names ⊆ target, imported = imported_names ⊆ target)
         isdefined(x, name) && check_cache(getfield(x, name); target, kwargs...)
     end
 end

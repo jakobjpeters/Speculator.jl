@@ -4,32 +4,39 @@
 @doc """
     Verbosity
 
-Flags that determine what logging statements are shown during [`speculate`](@ref).
+A flag that determine what logging statements are shown during [`speculate`](@ref).
 
-The base flags are [`none`](@ref), [`warn`](@ref), [`review`](@ref), and [`debug`](@ref).
-Elements may be combined using `|`.
+The base flags are [`warn`](@ref), [`review`](@ref), and [`debug`](@ref).
 
 # Interface
 
 - `|(::Verbosity,\u00A0::Verbosity)`
-- `in(::Verbosity,\u00A0::Verbosity)`
+    - Combine the verbosities such that each satisfies `issubset` with the resulting verbosity.
+- `issubset(::Verbosity,\u00A0::Verbosity)`
+    - Check whether each flag of the first verbosity is a flag of the second verbosity.
 - `show(::IO,\u00A0::Verbosity)`
 
 # Examples
 
 ```jldoctest
-julia> none | warn
-warn::Verbsosity
+julia> debug
+debug::Verbsosity
 
-julia> review | debug
-(review | debug)::Verbosity
+julia> review | warn
+(review | warn)::Verbosity
+
+julia> review ⊆ review
+true
+
+julia> review ⊆ warn
+false
 ```
 """ Verbosity
 
 @doc """
     none
 
-An element of [`Verbosity`](@ref) which specifies that
+A flag of [`Verbosity`](@ref) which specifies that
 [`speculate`](@ref) should show no logging statements.
 
 # Examples
@@ -43,7 +50,7 @@ none::Verbosity
 @doc """
     warn
 
-An element of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
+A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
 should show warnings for failed calls to `precompile`.
 
 # Examples
@@ -57,7 +64,7 @@ warn::Verbosity
 @doc """
     review
 
-An element of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
+A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
 should show the total number of values that have been speculated.
 
 # Examples
@@ -71,7 +78,7 @@ debug::Verbosity
 @doc """
     debug
 
-An element of [`Verbosity`](@ref) which specifies that
+A flag of [`Verbosity`](@ref) which specifies that
 [`speculate`](@ref) should show each successful call to `precompile`.
 
 # Examples
