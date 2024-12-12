@@ -5,15 +5,10 @@
 
 Speculator.jl is a tool to reduce latency by generating and running precompilation workloads.
 
-These workloads compile methods with concrete type
-signatures and are run in a background thread by default.
-However, they do not yet handle abstractly typed methods,
-method invalidations, and dynamic dispatch.
-
-Code needs to be compiled, either upon installation of a package or as needed during runtime.
+Code needs to be compiled, either upon the installation of a package or as needed during runtime.
 In the former case, this can be used in a package as a supplement or alternative to
 [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl).
-In the latter case, it can be used in a `startup.jl` or interactively in the REPL.
+In the latter case, it can be used in a `startup.jl` file or interactively in the REPL.
 
 Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
 
@@ -32,7 +27,7 @@ julia> add(; url = "github.com/jakobjpeters/Speculator.jl")
 ```julia-repl
 julia> using Speculator
 
-julia> speculate(Base; verbosity = debug)
+julia> speculate(Base; verbosity = debug | review)
 ```
 
 ## Case Study
@@ -44,7 +39,7 @@ latency in Julia and the substantial improvements made to the time-to-first-X pr
 julia> using Plots
 
 julia> @elapsed plot(1)
-0.096673055
+0.11925835
 ```
 
 This call has very low latency, demonstrating that code
@@ -54,45 +49,45 @@ Speculator.jl can do this automatically.
 
 ```julia-repl
 julia> @elapsed using Speculator
-0.024472137
+0.040250955
 
-julia> @elapsed speculate(Plots; background = false)
-10.865878121
-
-julia> @elapsed speculate(Plots; background = false)
-0.54081279
+julia> time_precompilation(Plots)
+5.311583979
 ```
 
-The initial call to `speculate` measures both time spent searching
-for methods to precompile and the precompilation time itself.
-Since the workload has been precompiled, the subsequent call provides
-an estimate of the time spent searching for methods to precompile.
-The difference is then an estimate of the compilation time,
-which is approximately 10 seconds.
-
-Since Speculator.jl only compiles methods with concrete type signatures, the
-methods compiled by this workload are likely to be either called within Plots.jl or dead code.
+The `time_precompilation` function estimates the compilation time that `speculate` saves.
+This case uses the minimum `target`, which only compiles methods of public
+functions, types, and the types of values, recursively for public modules.
+Although there are numerous additional targets, this target only precompiles a subset
+of the methods that are accessible to users as part of the Plots.jl public interface.
+This can be verified using `speculate(Plots; verbosity = debug | review)`.
 Therefore, including this precompilation workload in Plots.jl or running it in the background
-of an interactive session could save up to 10 seconds of compilation time per session.
+of an interactive session can save up to five seconds of compilation time per session.
+Testing and selecting additional targets can save even more time.
 
-If instead, the Plots.jl workload did not compile any new methods,
+If instead, the Plots.jl workload did not precompile any new methods,
 using Speculator.jl would not meaningfully lengthen loading time.
 The package itself takes a fraction of a second to load in a package or interactive session.
-Running this workload in Plots.jl would only add a half of a second to
-precompilation time upon installation; running a workload in the background
-of an interactive session would only take a fraction of a second to initiate.
+Running a workload in the background also only takes a fraction of a second to initiate.
 Therefore, using Speculator.jl has a high benefit to
 cost ratio in terms of compilation and loading time.
 
 ## Features
 
 - Run precompilation workloads for modules, functions, and types.
-- Configuration to run in the background and show logging statements.
+    - Configurable to run in the background,
+        show logging statements, and select precompilation targets.
 - Custom REPL mode that runs a workload for every input.
+- Estimate the compilation time saved by a workload.
 
 ### Planned
 
-- Disable during development using Preferences.jl
-- Abstractly typed methods?
-- Support for Revise.jl
-- Threaded workloads
+- Disable during development using Preferences.jl?
+- Support for Revise.jl?
+- Threaded workloads?
+
+## Similar Packages
+
+- [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
+- [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
+    - [SnoopCompileCore.jl](https://github.com/timholy/SnoopCompile.jl/tree/master/SnoopCompileCore)
