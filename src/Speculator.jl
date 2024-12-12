@@ -7,13 +7,13 @@ using InteractiveUtils: subtypes
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
-include("targets.jl")
 include("utilities.jl")
+include("targets.jl")
 include("verbosities.jl")
 
 export Target, Verbosity,
-    abstract_methods, abstract_types, all_names, callable_objects,
-    debug, none, review, union_types, warn, imported_names,
+    abstract_methods, abstract_subtypes, all_names, any_subtypes, callable_objects,
+    debug, function_subtypes, review, union_types, warn, imported_names,
     install_speculate_mode, method_types, speculate, union_all_caches
 
 """
@@ -85,13 +85,17 @@ julia> speculate(Speculator)
 ```
 """
 function speculate(x;
-    background::Bool = true, target::Target = abstract_types | union_types, verbosity::Verbosity = warn)
+    background::Bool = true,
+    target::Union{Target, Nothing} = nothing,
+    verbosity::Union{Verbosity, Nothing} = warn
+)
     function f()
         cache, count = Set{UInt}(), Ref(0)
         callable_cache = copy(cache)
 
-        elapsed = @elapsed check_cache(x; all_names, background, cache,
-            callable_cache, count, imported_names, target, verbosity)
+        elapsed = @elapsed check_cache(x;
+            all_names, background, cache, callable_cache, count, imported_names,
+        target = Speculator.target(target), verbosity = Speculator.verbosity(verbosity))
 
         if review in verbosity
             log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
