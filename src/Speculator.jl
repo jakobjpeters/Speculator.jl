@@ -115,7 +115,8 @@ This function runs
 `speculate(::Any;\u00A0ignore,\u00A0target,\u00A0background\u00A0=\u00A0false,\u00A0verbosity\u00A0=\u00A0nothing)`
 sequentially with `dry = true` to compile methods in Speculator.jl, `dry = false`
 to measure the runtime of methods in Speculator.jl and calls to `precompile`,
-and `dry = true` to measure the runtime of methods in Speculator.jl.
+and `dry = false` to measure the runtime of methods in
+Speculator.jl and the overhead for repeated calls to `precompile`.
 The difference between the second and third runs is returned
 as an estimate of the runtime of calls to `precompile`.
 
@@ -127,9 +128,10 @@ See also [`target`](@ref).
     Therefore, this function should be used once at the beginning of a session.
 """
 function time_precompilation(x; ignore = default_ignore, target = default_target)
+    @nospecialize
     f(dry) = @elapsed speculate(x; dry, ignore, target, background = false, verbosity = nothing)
     f(true)
-    f(false) - f(true)
+    f(false) - f(false)
 end
 
 speculate(Speculator;

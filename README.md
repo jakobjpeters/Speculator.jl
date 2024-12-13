@@ -19,7 +19,7 @@ Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
 ```julia-repl
 julia> using Pkg: add
 
-julia> add(; url = "github.com/jakobjpeters/Speculator.jl")
+julia> add(; url = "https://github.com/jakobjpeters/Speculator.jl")
 ```
 
 ### Showcase

@@ -12,10 +12,11 @@ macro flag(type, names...)
         struct $type
             value::$(Symbol(:UInt, type == :verbosity ? 8 : 16))
 
+            global $constructor_name
+
             $constructor_name(x::Int) = new(x)
             $constructor_name(::Nothing) = new(0)
             $constructor_name(x::$type_name) = x
-            global $constructor_name
 
             Base.:|(f::$type_name, _f::$type_name) = new(f.value | _f.value)
 
