@@ -3,19 +3,23 @@ module Speculator
 
 # BUG: `speculate(Base; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
 
-using Base: Threads.@spawn, active_repl, Iterators.product, uniontypes
+import Base: eltype, firstindex, getindex, iterate, lastindex, length, show
+using Base: Threads.@spawn, active_project, active_repl, Iterators.product, uniontypes
 using InteractiveUtils: subtypes
+using Serialization: serialize
+using Statistics: mean, median
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
 include("utilities.jl")
 include("targets.jl")
 include("verbosities.jl")
+include("speculation_benchmarks.jl")
 
-export Target, Verbosity,
+export SpeculationBenchmark, Target, Verbosity,
     abstract_methods, abstract_subtypes, all_names, any_subtypes, callable_objects,
     debug, function_subtypes, review, union_types, warn, imported_names,
-    install_speculate_mode, method_types, speculate, time_precompilation, union_all_caches
+    install_speculate_mode, method_types, speculate, union_all_caches
 
 """
     install_speculate_mode(;
@@ -109,40 +113,6 @@ function speculate(x;
     end
 
     background ? (@spawn f(); nothing) : f()
-end
-
-"""
-    time_precompilation(::Any;
-        ignore = $default_ignore,
-        max_methods::Integer = $default_max_methods,
-        target::Union{Target, Nothing} = $default_target
-    )
-
-Estimate the compilation time saved by [`speculate`](@ref).
-
-This function runs
-`speculate(::Any;\u00A0ignore,\u00A0target,\u00A0background\u00A0=\u00A0false,\u00A0verbosity\u00A0=\u00A0nothing)`
-sequentially with `dry = true` to compile methods in Speculator.jl, `dry = false`
-to measure the runtime of methods in Speculator.jl and calls to `precompile`,
-and `dry = false` to measure the runtime of methods in
-Speculator.jl and the overhead for repeated calls to `precompile`.
-The difference between the second and third runs is returned
-as an estimate of the runtime of calls to `precompile`.
-
-See also [`target`](@ref).
-
-!!! info
-    Previous calls to `speculate` and `precompile` may underestimate the
-    runtime if there is overlap between the previous and current workloads.
-    Therefore, this function should be used once at the beginning of a session.
-"""
-function time_precompilation(x;
-    ignore = default_ignore, max_methods = default_max_methods, target = default_target)
-    @nospecialize
-    f(dry) = @elapsed speculate(x;
-        dry, ignore, max_methods, target, background = false, verbosity = nothing)
-    f(true)
-    f(false) - f(false)
 end
 
 speculate(Speculator;
