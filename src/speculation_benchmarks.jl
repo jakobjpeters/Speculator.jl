@@ -75,8 +75,8 @@ length(pb::SpeculationBenchmark) = length(pb.times)
 
 function show(io::IO, ::MIME"text/plain", pb::SpeculationBenchmark)
     println(io, "Precompilation benchmark with `$(length(pb))` samples:")
-    println(io, "  Mean:    `$(round(mean(pb); digits = 2))`")
-    println(io, "  Median:  `$(round(median(pb); digits = 2))`")
-    println(io, "  Minimum: `$(round(minimum(pb); digits = 2))`")
-    print(io, "  Maximum: `$(round(maximum(pb); digits = 2))`")
+    println(io, "  Mean:    `$(round_time(mean(pb)))`")
+    println(io, "  Median:  `$(round_time(median(pb)))`")
+    println(io, "  Minimum: `$(round_time(minimum(pb)))`")
+    print(io, "  Maximum: `$(round_time(maximum(pb)))`")
 end

@@ -162,6 +162,8 @@ function precompile_method(x, nospecialize, sig::DataType; max_methods, target, 
 end
 precompile_method(x, nospecialize, ::UnionAll; _...) = @nospecialize
 
+round_time(x) = signbit(x) ? 0 : round(x; digits = 4)
+
 function signature(x, types)
     @nospecialize
     signature(x) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'

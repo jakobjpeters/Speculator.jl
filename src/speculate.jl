@@ -48,18 +48,18 @@ function speculate(x;
     target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
-    function f()
+    function _speculate()
         cache, count = Set(Iterators.map(objectid, ignore)), Ref(0)
         callable_cache, _verbosity = copy(cache), Speculator.verbosity(verbosity)
 
-        elapsed = @elapsed check_cache(x;
+        elapsed = round_time(@elapsed check_cache(x;
             all_names, background, cache, callable_cache, count, dry, imported_names, max_methods,
-        target = Speculator.target(target), verbosity = _verbosity)
+        target = Speculator.target(target), verbosity = _verbosity))
 
         if review ⊆ _verbosity
             log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
         end
     end
 
-    background ? (@spawn f(); nothing) : f()
+    background ? (@spawn _speculate(); nothing) : _speculate()
 end
