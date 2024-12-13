@@ -56,6 +56,7 @@ end
         background::Bool = true,
         dry::Bool = false,
         ignore = $default_ignore,
+        max_methods::Integer = $default_max_methods,
         target::Union{Target, Nothing} = $default_target,
         verbosity::Union{Verbosity, Nothing} = warn
     )
@@ -72,6 +73,9 @@ which may be useful if there are new methods to precompile.
 - `dry`: Specifies whether to actually run `precompile`.
     This is useful for [`time_precompilation`](@ref).
 - `ignore`: An iterable of values that will not be speculated.
+- `max_methods`: Ignores a function if `abstract_methods` is a subset of the `target` and the
+    number of methods is greater than this value. This prevents spending too much time precompiling
+    a single function, but is slower than manually including that function in `ignore`.
 - `target`: Specifies what methods to precompile. See also [`Target`](@ref).
 - `verbosity`: Specifies what logging statements to show.
     If this function is used as a precompilation workload,
@@ -87,6 +91,7 @@ function speculate(x;
     background::Bool = true,
     dry::Bool = false,
     ignore = default_ignore,
+    max_methods::Integer = default_max_methods,
     target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
@@ -95,7 +100,7 @@ function speculate(x;
         callable_cache, _verbosity = copy(cache), Speculator.verbosity(verbosity)
 
         elapsed = @elapsed check_cache(x;
-            all_names, background, cache, callable_cache, count, dry, imported_names,
+            all_names, background, cache, callable_cache, count, dry, imported_names, max_methods,
         target = Speculator.target(target), verbosity = _verbosity)
 
         if review ⊆ _verbosity
@@ -107,7 +112,11 @@ function speculate(x;
 end
 
 """
-    time_precompilation(::Any; ignore = $default_ignore, target::$(typeof(default_target)) = $default_target)
+    time_precompilation(::Any;
+        ignore = $default_ignore,
+        max_methods::Integer = $default_max_methods,
+        target::Union{Target, Nothing} = $default_target
+    )
 
 Estimate the compilation time saved by [`speculate`](@ref).
 
@@ -127,9 +136,11 @@ See also [`target`](@ref).
     runtime if there is overlap between the previous and current workloads.
     Therefore, this function should be used once at the beginning of a session.
 """
-function time_precompilation(x; ignore = default_ignore, target = default_target)
+function time_precompilation(x;
+    ignore = default_ignore, max_methods = default_max_methods, target = default_target)
     @nospecialize
-    f(dry) = @elapsed speculate(x; dry, ignore, target, background = false, verbosity = nothing)
+    f(dry) = @elapsed speculate(x;
+        dry, ignore, max_methods, target, background = false, verbosity = nothing)
     f(true)
     f(false) - f(false)
 end

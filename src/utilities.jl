@@ -1,6 +1,8 @@
 
 const default_ignore = []
 
+const default_max_methods = 2 ^ 8
+
 const default_target = nothing
 
 macro flag(type, names...)
@@ -117,14 +119,14 @@ function precompile_methods(x; kwargs...)
     end
 end
 
-function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
+function precompile_method(x, nospecialize, sig::DataType; max_methods, target, kwargs...)
     @nospecialize
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
 
         if abstract_methods ⊆ target
             if all(is_not_vararg, parameter_types)
-                for concrete_types in product(map(eachindex(parameter_types)) do i
+                product_types = map(eachindex(parameter_types)) do i
                     branches, leaves = Type[parameter_types[i]], DataType[]
                     no_specialize = (nospecialize >> (i - 1)) & 1 == 1
 
@@ -140,9 +142,12 @@ function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
                     end
 
                     leaves
-                end...)
-                    precompile_concrete(x, concrete_types; kwargs...)
                 end
+
+                (length(product_types) == 0 || prod(length, product_types) ≤ max_methods) &&
+                    for concrete_types in product(product_types...)
+                        precompile_concrete(x, concrete_types; kwargs...)
+                    end
             end
         elseif all(isconcretetype, parameter_types)
             precompile_concrete(x, (parameter_types...,); kwargs...)
@@ -150,7 +155,7 @@ function precompile_method(x, nospecialize, sig::DataType; target, kwargs...)
 
         if method_types ⊆ target
             for parameter_type in parameter_types
-                check_cache(parameter_type; target, kwargs...)
+                check_cache(parameter_type; max_methods, target, kwargs...)
             end
         end
     end
