@@ -7,8 +7,7 @@
         target::Union{Target, Nothing} = $default_target
     )
 
-Benchmark the compilation time saved by the precompilation workload
-ran by [`speculate`](@ref) with the given keyword parameters.
+Benchmark the compilation time saved by the precompilation workload ran by [`speculate`](@ref).
 
 For each of the `samples`, this runs a trial precompilation workload.
 Each trial occurs in a new process, so that precompilation is not cached across trials.

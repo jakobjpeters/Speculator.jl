@@ -72,16 +72,21 @@ which may be useful if there are new methods to precompile.
 
 # Keyword parameters
 
-- `background`: Specifies whether to precompile on a thread in the `:default` pool.
+- `background`:
+    Specifies whether to precompile on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
-- `dry`: Specifies whether to actually run `precompile`.
+- `dry`:
+    Specifies whether to actually run `precompile`.
     This is useful for [`time_precompilation`](@ref).
 - `ignore`: An iterable of values that will not be speculated.
-- `max_methods`: Ignores a function if `abstract_methods` is a subset of the `target` and the
-    number of methods is greater than this value. This prevents spending too much time precompiling
-    a single function, but is slower than manually including that function in `ignore`.
+- `maximum_methods`:
+    Ignores a generic method if `abstract_methods` is a subset of the
+    `target` and the number of concrete methods is greater than this value.
+    This prevents spending too much time precompiling a single generic method,
+    but is slower than manually including that function in `ignore`.
 - `target`: Specifies what methods to precompile. See also [`Target`](@ref).
-- `verbosity`: Specifies what logging statements to show.
+- `verbosity`:
+    Specifies what logging statements to show.
     If this function is used as a precompilation workload,
     this should be set to `nothing` or [`warn`](@ref).
     See also [`Verbosity`](@ref).
