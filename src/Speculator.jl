@@ -1,7 +1,7 @@
 
 module Speculator
 
-# BUG: `speculate(Base; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
+# BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, show
 using Base: Threads.@spawn, active_project, active_repl, Iterators.product, uniontypes

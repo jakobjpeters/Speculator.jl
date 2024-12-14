@@ -27,7 +27,10 @@ julia> add(; url = "https://github.com/jakobjpeters/Speculator.jl")
 ```julia-repl
 julia> using Speculator
 
-julia> speculate(Base; verbosity = debug | review)
+julia> speculate(Iterators;
+           verbosity = debug | review,
+           target = method_types | union_types
+       )
 ```
 
 ## Case Study
@@ -39,7 +42,7 @@ latency in Julia and the substantial improvements made to the time-to-first-X pr
 julia> using Plots
 
 julia> @elapsed plot(1)
-0.11925835
+0.106041791
 ```
 
 This call has very low latency, demonstrating that code
@@ -49,13 +52,17 @@ Speculator.jl can do this automatically.
 
 ```julia-repl
 julia> @elapsed using Speculator
-0.040250955
+0.040658097
 
-julia> time_precompilation(Plots)
-5.311583979
+julia> SpeculationBenchmark(Plots, 8)
+Precompilation benchmark with `8` samples:
+  Mean:    `5.113`
+  Median:  `5.1546`
+  Minimum: `4.724`
+  Maximum: `5.5401`
 ```
 
-The `time_precompilation` function estimates the compilation time that `speculate` saves.
+The `SpeculationBenchmark` estimates the compilation time that `speculate` saves.
 This case uses the minimum `target`, which only compiles methods of public
 functions, types, and the types of values, recursively for public modules.
 Although there are numerous additional targets, this target only precompiles a subset
