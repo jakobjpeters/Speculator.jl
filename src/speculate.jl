@@ -1,10 +1,22 @@
 
+function _speculate((@nospecialize x), parameters)
+    elapsed = round_time(@elapsed check_ignore!(x, parameters))
+
+    if review ⊆ parameters.verbosity
+        counter = parameters.counter[]
+        values = sum(length, [parameters.ignore_callables, parameters.ignore_types])
+        log_repl(() -> (
+            @info "Precompiled `$counter` methods from `$values` values in `$elapsed` seconds"),
+        parameters.background)
+    end
+end
+
 """
     speculate(::Any;
         background::Bool = true,
         dry::Bool = false,
         ignore = $default_ignore,
-        max_methods::Integer = $default_max_methods,
+        maximum_methods::Integer = $default_maximum_methods,
         target::Union{Target, Nothing} = $default_target,
         verbosity::Union{Verbosity, Nothing} = warn
     )
@@ -40,28 +52,18 @@ which may be useful if there are new methods to precompile.
 julia> speculate(Speculator)
 ```
 """
-function speculate(x;
+function speculate((@nospecialize x);
     background::Bool = true,
     dry::Bool = false,
     ignore = default_ignore,
-    max_methods::Integer = default_max_methods,
+    maximum_methods::Integer = default_maximum_methods,
     target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
-    function _speculate()
-        ignore_callables = Set(Iterators.map(objectid, ignore))
-        ignore_types = copy(ignore_callables)
-        product_cache, subtype_cache = Dict{UInt, Vector{DataType}}(), Dict{UInt, Vector{Type}}()
-        count, _verbosity = Ref(0), Speculator.verbosity(verbosity)
+    ignore_callables = Set(Iterators.map(objectid, ignore))
+    parameters = Parameters(background, Ref(0), dry, ignore_callables,
+        copy(ignore_callables), maximum_methods, Dict{UInt, Vector{DataType}}(),
+    Dict{UInt, Vector{Type}}(), Speculator.target(target), Speculator.verbosity(verbosity))
 
-        elapsed = round_time(@elapsed check_ignore!(x; all_names, background, count,
-            dry, ignore_callables, ignore_types, imported_names, max_methods, product_cache,
-        subtype_cache, target = Speculator.target(target), verbosity = _verbosity))
-
-        if review ⊆ _verbosity
-            log_repl(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [ignore_callables, ignore_types]))` values in `$elapsed` seconds"), background)
-        end
-    end
-
-    background ? (@spawn _speculate(); nothing) : _speculate()
+    background ? (@spawn _speculate(x, parameters); nothing) : _speculate(x, parameters)
 end

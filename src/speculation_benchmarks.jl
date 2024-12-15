@@ -3,7 +3,7 @@
     SpeculationBenchmark
     SpeculationBenchmark(::Any, samples::Integer = 8;
         ignore = $default_ignore,
-        max_methods::Integer = $default_max_methods,
+        maximum_methods::Integer = $default_maximum_methods,
         target::Union{Target, Nothing} = $default_target
     )
 
@@ -44,13 +44,13 @@ struct SpeculationBenchmark
     times::Vector{Float64}
 
     function SpeculationBenchmark(x, samples::Integer = 8;
-        ignore = default_ignore, max_methods = default_max_methods, target = default_target)
+        ignore = default_ignore, maximum_methods = default_maximum_methods, target = default_target)
         @nospecialize
 
         data_path, time_path = tempname(), tempname()
         times = Float64[]
 
-        serialize(data_path, (x, ignore, max_methods, target))
+        serialize(data_path, (x, ignore, maximum_methods, target))
 
         for _ in 1:samples
             run(Cmd(["julia", "--project=$(active_project())", "--eval",

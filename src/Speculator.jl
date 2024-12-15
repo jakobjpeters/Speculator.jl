@@ -12,9 +12,8 @@ using Statistics: mean, median
 using REPL: LineEdit.refresh_line
 using ReplMaker: complete_julia, initrepl
 
+include("flags/flags.jl")
 include("utilities.jl")
-include("targets.jl")
-include("verbosities.jl")
 include("speculation_benchmarks.jl")
 include("speculate.jl")
 include("install_speculate_mode.jl")
