@@ -1,12 +1,14 @@
 
 function _speculate((@nospecialize x), parameters)
-    elapsed = round_time(@elapsed check_ignore!(x, parameters))
+    elapsed = @elapsed check_ignore!(x, parameters)
 
     if review ⊆ parameters.verbosity
         counter = parameters.counter[]
+        seconds = round_time(elapsed)
+        statement = parameters.dry ? "Found" : "Precompiled"
         values = sum(length, [parameters.ignore_callables, parameters.ignore_types])
         log_repl(() -> (
-            @info "Precompiled `$counter` methods from `$values` values in `$elapsed` seconds"),
+            @info "$statement `$counter` methods from `$values` values in `$seconds` seconds"),
         parameters.background)
     end
 end
@@ -60,7 +62,7 @@ function speculate((@nospecialize x);
     target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
-    ignore_callables = Set(Iterators.map(objectid, ignore))
+    ignore_callables = Set(map(objectid, ignore))
     parameters = Parameters(background, Ref(0), dry, ignore_callables,
         copy(ignore_callables), maximum_methods, Dict{UInt, Vector{DataType}}(),
     Dict{UInt, Vector{Type}}(), Speculator.target(target), Speculator.verbosity(verbosity))

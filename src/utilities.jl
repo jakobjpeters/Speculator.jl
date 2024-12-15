@@ -51,7 +51,11 @@ end
 function precompile_concrete((@nospecialize x), parameters, (@nospecialize types))
     background, verbosity = parameters.background, parameters.verbosity
 
-    if parameters.dry || precompile(x, types)
+    if parameters.dry
+        debug ⊆ verbosity &&
+            log_repl(() -> (@info "Found `$(signature(x, types))`"), background)
+        parameters.counter[] += 1
+    elseif precompile(x, types)
         debug ⊆ verbosity &&
             log_repl(() -> (@info "Precompiled `$(signature(x, types))`"), background)
         parameters.counter[] += 1
@@ -120,8 +124,10 @@ function round_time(x)
     whole * '.' * rpad(fraction, 4, '0')
 end
 
-signature((@nospecialize x), types) =
+function signature(x, types)
+    @nospecialize
     signature(x) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
+end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
