@@ -24,8 +24,8 @@ which may be useful if there are new methods to precompile.
     This is useful for [`time_precompilation`](@ref).
 - `ignore`: An iterable of values that will not be speculated.
 - `maximum_methods`:
-    Ignores a generic method if `abstract_methods` is a subset of the
-    `target` and the number of concrete methods is greater than this value.
+    Ignores a method with an abstract type signature if `abstract_methods` is a subset
+    of the `target` and the number of concrete methods is greater than this value.
     This prevents spending too much time precompiling a single generic method,
     but is slower than manually including that function in `ignore`.
 - `target`: Specifies what methods to precompile. See also [`Target`](@ref).
@@ -49,15 +49,17 @@ function speculate(x;
     verbosity::Union{Verbosity, Nothing} = warn
 )
     function _speculate()
-        cache, count = Set(Iterators.map(objectid, ignore)), Ref(0)
-        callable_cache, _verbosity = copy(cache), Speculator.verbosity(verbosity)
+        ignore_callables = Set(Iterators.map(objectid, ignore))
+        ignore_types = copy(ignore_callables)
+        abstract_concretes = Dict{UInt, Vector{DataType}}()
+        count, _verbosity = Ref(0), Speculator.verbosity(verbosity)
 
-        elapsed = round_time(@elapsed check_cache(x;
-            all_names, background, cache, callable_cache, count, dry, imported_names, max_methods,
-        target = Speculator.target(target), verbosity = _verbosity))
+        elapsed = round_time(@elapsed check_ignore!(x; abstract_concretes,
+            all_names, background, count, dry, ignore_callables, ignore_types, imported_names,
+        max_methods, target = Speculator.target(target), verbosity = _verbosity))
 
         if review ⊆ _verbosity
-            log_repl(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
+            log_repl(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [ignore_callables, ignore_types]))` values in `$elapsed` seconds"), background)
         end
     end
 

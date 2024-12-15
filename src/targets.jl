@@ -1,7 +1,7 @@
 
 @flag(Target,
-    abstract_methods, abstract_subtypes, all_names, any_subtypes, callable_objects,
-    function_subtypes, imported_names, method_types, union_all_caches, union_types
+    abstract_methods, abstract_subtypes, all_names, callable_objects,
+    imported_names, method_types, union_all_caches, union_types
 )
 
 @doc """
@@ -9,9 +9,9 @@
 
 A flag that specifies what methods to precompile within [`speculate`](@ref).
 
-The base flags are [`abstract_methods`](@ref), [`abstract_subtypes`](@ref), [`all_names`](@ref),
-[`any_subtypes`](@ref), [`callable_objects`](@ref), [`function_subtypes`](@ref),
-[`imported_names`](@ref), [`methods_types`](@ref), [`union_all_caches`], and [`union_types`](@ref).
+The base flags are [`abstract_methods`](@ref), [`abstract_subtypes`](@ref),
+[`all_names`](@ref), [`callable_objects`](@ref), [`imported_names`](@ref),
+[`methods_types`](@ref), [`union_all_caches`], and [`union_types`](@ref).
 
 !!! warning
     Some combinations may result in an exponentially larger precompilation workload.
@@ -87,20 +87,6 @@ all_names::Target
 """ all_names
 
 @doc """
-    any_subtypes
-
-A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
-will use `subtypes(Any)` in the precompilation workload.
-
-# Examples
-
-```jldoctest
-julia> any_subtypes
-any_subtypes::Target
-```
-""" any_subtypes
-
-@doc """
     callable_objects
 
 A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
@@ -113,20 +99,6 @@ julia> callable_objects
 callable_objects::Target
 ```
 """ callable_objects
-
-@doc """
-    function_subtypes
-
-A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
-will use `subtypes(Function)` in the precompilation workload.
-
-# Examples
-
-```jldoctest
-julia> function_subtypes
-function_subtypes::Target
-```
-""" function_subtypes
 
 @doc """
     imported_names

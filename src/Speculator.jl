@@ -19,8 +19,8 @@ include("speculate.jl")
 include("install_speculate_mode.jl")
 
 export SpeculationBenchmark, Target, Verbosity,
-    abstract_methods, abstract_subtypes, all_names, any_subtypes, callable_objects,
-    debug, function_subtypes, review, union_types, warn, imported_names,
+    abstract_methods, abstract_subtypes, all_names, callable_objects,
+    debug, review, union_types, warn, imported_names,
     install_speculate_mode, method_types, speculate, union_all_caches
 
 speculate(Speculator;
