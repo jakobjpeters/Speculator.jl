@@ -64,7 +64,7 @@ function check_ignore!(x::Union{DataType, Function, Module, UnionAll, Union}; ig
     @nospecialize
     ignore!((x; kwargs...) -> begin
         @nospecialize
-        speculate_cached(x; kwargs...)
+        speculate_ignored(x; kwargs...)
     end, ignore_types, objectid(x), x; ignore_types, kwargs...)
 end
 function check_ignore!(x::T; ignore_callables, ignore_types, target, kwargs...) where T
@@ -76,17 +76,12 @@ function check_ignore!(x::T; ignore_callables, ignore_types, target, kwargs...) 
     end, ignore_callables, object_id, x; ignore_callables, ignore_types, target, kwargs...)
     ignore!((x; kwargs...) -> begin
         @nospecialize
-        speculate_cached(x; kwargs...)
+        speculate_ignored(x; kwargs...)
     end, ignore_types, object_id, T; ignore_callables, ignore_types, target, kwargs...)
 end
 
 is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
-
-leaf_types(x::DataType, target) =
-    abstract_subtypes ⊆ target ? filter!(subtype -> !(x <: subtype), subtypes(x)) : []
-leaf_types(x::UnionAll, target) = union_all_caches ⊆ target ? union_all_cache!([], target, x) : []
-leaf_types(x::Union, target) = union_types ⊆ target ? uniontypes(x) : []
 
 function log_repl((@nospecialize f), background)
     flag = background && isinteractive()
@@ -117,7 +112,7 @@ function precompile_methods(x; kwargs...)
 end
 
 function precompile_method(x, nospecialize, sig::DataType;
-    abstract_concretes, max_methods, target, kwargs...)
+    max_methods, product_cache, subtype_cache, target, kwargs...)
     @nospecialize
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
@@ -126,7 +121,7 @@ function precompile_method(x, nospecialize, sig::DataType;
             if all(is_not_vararg, parameter_types)
                 product_types = map(eachindex(parameter_types)) do i
                     parameter_type = parameter_types[i]
-                    get!(abstract_concretes, objectid(parameter_type)) do
+                    get!(product_cache, objectid(parameter_type)) do
                         branches, leaves = Type[parameter_type], DataType[]
                         no_specialize = (nospecialize >> (i - 1)) & 1 == 1
 
@@ -137,7 +132,7 @@ function precompile_method(x, nospecialize, sig::DataType;
                                 !any(type -> type <: branch, [DataType, UnionAll, Union])
                                 push!(leaves, branch)
                                 no_specialize && break
-                            else append!(branches, leaf_types(branch, target))
+                            else append!(branches, subtypes!(branch, subtype_cache, target))
                             end
                         end
 
@@ -156,7 +151,8 @@ function precompile_method(x, nospecialize, sig::DataType;
 
         if method_types ⊆ target
             for parameter_type in parameter_types
-                check_ignore!(parameter_type; abstract_concretes, max_methods, target, kwargs...)
+                check_ignore!(parameter_type;
+                    max_methods, product_cache, subtype_cache, target, kwargs...)
             end
         end
     end
@@ -175,32 +171,42 @@ end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
-# TODO: `methodswith`
-function speculate_cached(x::Function; kwargs...)
+function speculate_ignored(x::Function; kwargs...)
     @nospecialize
     precompile_methods(x; kwargs...)
 end
-function speculate_cached(x::Module; target, kwargs...)
+function speculate_ignored(x::Module; target, kwargs...)
     @nospecialize
     for name in names(x; all = all_names ⊆ target, imported = imported_names ⊆ target)
         isdefined(x, name) && check_ignore!(getfield(x, name); target, kwargs...)
     end
 end
-function speculate_cached(x::Union{DataType, UnionAll, Union}; target, kwargs...)
+function speculate_ignored(x::Union{DataType, UnionAll, Union}; subtype_cache, target, kwargs...)
     @nospecialize
-    precompile_methods(x; target, kwargs...)
+    precompile_methods(x; subtype_cache, target, kwargs...)
 
-    for type in leaf_types(x, target)
-        check_ignore!(type; target, kwargs...)
+    for type in subtypes!(x, subtype_cache, target)
+        check_ignore!(type; subtype_cache, target, kwargs...)
     end
 end
 
-union_all_cache!(types, _, x::DataType) =
+subtypes!(x::DataType, subtype_cache, target) =
+    if abstract_subtypes ⊆ target
+        _subtypes = get!(() -> subtypes(x), subtype_cache, objectid(x))
+        Any <: x ? filter!(subtype -> !(Any <: subtype), _subtypes) : _subtypes
+    else []
+    end
+subtypes!(x::UnionAll, subtype_cache, target) =
+    union_all_caches ⊆ target ? union_all_cache!([], subtype_cache, target, x) : []
+subtypes!(x::Union, _, target) = union_types ⊆ target ? uniontypes(x) : []
+
+union_all_cache!(types, _, _, x::DataType) =
     append!(types, Iterators.filter(!isnothing, x.name.cache))
-union_all_cache!(types, target, x::UnionAll) = union_all_cache!(types, target, x.body)
-function union_all_cache!(types, target, x::Union)
-    for type in leaf_types(x, target)
-        union_all_cache!(types, target, type)
+union_all_cache!(types, subtype_cache, target, x::UnionAll) =
+    union_all_cache!(types, subtype_cache, target, x.body)
+function union_all_cache!(types, subtype_cache, target, x::Union)
+    for type in subtypes!(x, subtype_cache, target)
+        union_all_cache!(types, subtype_cache, target, type)
     end
 
     types

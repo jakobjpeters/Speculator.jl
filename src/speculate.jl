@@ -51,12 +51,12 @@ function speculate(x;
     function _speculate()
         ignore_callables = Set(Iterators.map(objectid, ignore))
         ignore_types = copy(ignore_callables)
-        abstract_concretes = Dict{UInt, Vector{DataType}}()
+        product_cache, subtype_cache = Dict{UInt, Vector{DataType}}(), Dict{UInt, Vector{Type}}()
         count, _verbosity = Ref(0), Speculator.verbosity(verbosity)
 
-        elapsed = round_time(@elapsed check_ignore!(x; abstract_concretes,
-            all_names, background, count, dry, ignore_callables, ignore_types, imported_names,
-        max_methods, target = Speculator.target(target), verbosity = _verbosity))
+        elapsed = round_time(@elapsed check_ignore!(x; all_names, background, count,
+            dry, ignore_callables, ignore_types, imported_names, max_methods, product_cache,
+        subtype_cache, target = Speculator.target(target), verbosity = _verbosity))
 
         if review ⊆ _verbosity
             log_repl(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [ignore_callables, ignore_types]))` values in `$elapsed` seconds"), background)
