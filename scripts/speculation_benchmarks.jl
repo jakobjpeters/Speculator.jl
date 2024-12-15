@@ -1,4 +1,6 @@
 
+using Base: find_package
+using Pkg: PackageSpec, add
 using Serialization: deserialize
 using Speculator: speculate
 
@@ -6,7 +8,13 @@ load_data(path) =
     try deserialize(path)
     catch e
         if e isa KeyError
-            @eval using $(Symbol(e.key.name))
+            key = e.key
+            name = key.name
+
+            redirect_stderr(devnull) do
+                isnothing(find_package(name)) && add(PackageSpec(name, key.uuid))
+                @eval using $(Symbol(name))
+            end
             load_data(data_path)
         else rethrow()
         end

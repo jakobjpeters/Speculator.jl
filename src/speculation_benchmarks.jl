@@ -53,7 +53,9 @@ struct SpeculationBenchmark
         serialize(data_path, (x, ignore, max_methods, target))
 
         for _ in 1:samples
-            run(`julia --project=$(active_project()) --eval 'include("scripts/speculation_benchmarks.jl")' $data_path $time_path`)
+            run(Cmd(["julia", "--project=$(active_project())", "--eval",
+                "include(\"$(dirname(dirname((@__FILE__))))/scripts/speculation_benchmarks.jl\")",
+            data_path, time_path]))
             push!(times, read(time_path, Float64))
         end
 
