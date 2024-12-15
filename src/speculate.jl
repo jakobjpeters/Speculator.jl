@@ -57,7 +57,7 @@ function speculate(x;
         target = Speculator.target(target), verbosity = _verbosity))
 
         if review ⊆ _verbosity
-            log(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
+            log_repl(() -> (@info "Precompiled `$(count[])` methods from `$(sum(length, [cache, callable_cache]))` values in `$elapsed` seconds"), background)
         end
     end
 

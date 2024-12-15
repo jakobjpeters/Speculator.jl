@@ -1,7 +1,7 @@
 
 """
     SpeculationBenchmark
-    SpeculationBenchmark(::Any, samples::Integer = 2;
+    SpeculationBenchmark(::Any, samples::Integer = 8;
         ignore = $default_ignore,
         max_methods::Integer = $default_max_methods,
         target::Union{Target, Nothing} = $default_target
@@ -20,9 +20,10 @@ Speculator.jl and the overhead for repeated calls to `precompile`.
 The result of a trial, an estimate of the runtime of calls to `precompile` in the workload,
 is the difference between the second and third runs.
 
-The default number of `samples` is small because some precompilation
-workloads can take a substantial amount of time to complete.
-Increase this parameter for more accurate benchmarks.
+!!! tip
+    Some precompilation workloads take a substantial amount of time to complete.
+    It is recommended to select an appropriate workload
+    with `speculate` before running a benchmark.
 
 See also [`Target`](@ref).
 
@@ -42,7 +43,7 @@ This type implements the iteration interface and part of the indexing interface.
 struct SpeculationBenchmark
     times::Vector{Float64}
 
-    function SpeculationBenchmark(x, samples::Integer = 2;
+    function SpeculationBenchmark(x, samples::Integer = 8;
         ignore = default_ignore, max_methods = default_max_methods, target = default_target)
         @nospecialize
 

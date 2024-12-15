@@ -54,11 +54,11 @@ Speculator.jl can do this automatically.
 julia> @elapsed using Speculator
 0.040658097
 
-julia> SpeculationBenchmark(Plots, 8)
+julia> SpeculationBenchmark(Plots)
 Precompilation benchmark with `8` samples:
-  Mean:    `5.113`
+  Mean:    `5.1130`
   Median:  `5.1546`
-  Minimum: `4.724`
+  Minimum: `4.7240`
   Maximum: `5.5401`
 ```
 

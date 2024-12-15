@@ -12,7 +12,7 @@ macro flag(type, names...)
 
     esc(quote
         struct $type
-            value::$(Symbol(:UInt, type == :verbosity ? 8 : 16))
+            value::$(Symbol(:UInt, max(8, 2 ^ Int(ceil(log(2, length(names)))))))
 
             global $constructor_name
 
@@ -91,8 +91,8 @@ leaf_types(x::Type{Function}, target) = function_subtypes ⊆ target ? subtypes(
 leaf_types(x::UnionAll, target) = union_all_caches ⊆ target ? union_all_cache!([], target, x) : []
 leaf_types(x::Union, target) = union_types ⊆ target ? uniontypes(x) : []
 
-function log((@nospecialize f), background)
-    flag = background && isdefined(Base, :active_repl)
+function log_repl((@nospecialize f), background)
+    flag = background && isinteractive()
     flag && print(stderr, "\33[2K\r\33[A")
     f()
     if flag
@@ -105,10 +105,10 @@ function precompile_concrete(x, types; background, count, dry, verbosity, _...)
     @nospecialize
     if dry || precompile(x, types)
         debug ⊆ verbosity &&
-            log(() -> (@info "Precompiled `$(signature(x, types))`"), background)
+            log_repl(() -> (@info "Precompiled `$(signature(x, types))`"), background)
         count[] += 1
     elseif warn ⊆ verbosity
-        log(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
+        log_repl(() -> (@warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"), background)
     end
 end
 
@@ -162,7 +162,10 @@ function precompile_method(x, nospecialize, sig::DataType; max_methods, target, 
 end
 precompile_method(x, nospecialize, ::UnionAll; _...) = @nospecialize
 
-round_time(x) = signbit(x) ? 0 : round(x; digits = 4)
+function round_time(x)
+    whole, fraction = split(string(max(0.0, round(x; digits = 4))), '.')
+    whole * '.' * rpad(fraction, 4, '0')
+end
 
 function signature(x, types)
     @nospecialize
