@@ -12,6 +12,7 @@ load_data(path) =
             name = key.name
 
             redirect_stderr(devnull) do
+                # TODO: catch error in `add`
                 isnothing(find_package(name)) && add(PackageSpec(name, key.uuid))
                 @eval using $(Symbol(name))
             end

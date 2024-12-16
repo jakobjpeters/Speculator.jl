@@ -7,6 +7,7 @@ function _speculate((@nospecialize x), parameters)
         seconds = round_time(elapsed)
         statement = parameters.dry ? "Found" : "Precompiled"
         values = sum(length, [parameters.ignore_callables, parameters.ignore_types])
+
         log_repl(() -> (
             @info "$statement `$counter` methods from `$values` values in `$seconds` seconds"),
         parameters.background)

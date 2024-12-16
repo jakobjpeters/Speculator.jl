@@ -114,11 +114,18 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
                     end
                 end
 
-                (isempty(product_types) ||
-                    prod(BigInt ∘ length, product_types) ≤ parameters.maximum_methods) &&
-                    for concrete_types in product(product_types...)
-                        precompile_concrete(x, parameters, concrete_types)
+                isempty(product_types) || begin
+                    count = 1
+
+                    for product_type in product_types
+                        count, overflow = mul_with_overflow(count, length(product_type))
+                        overflow && return false
                     end
+
+                    count ≤ parameters.maximum_methods
+                end && for concrete_types in product(product_types...)
+                    precompile_concrete(x, parameters, concrete_types)
+                end
             end
         elseif all(isconcretetype, parameter_types)
             precompile_concrete(x, parameters, (parameter_types...,))
