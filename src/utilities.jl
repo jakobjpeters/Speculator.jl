@@ -149,7 +149,7 @@ speculate_ignored((@nospecialize x::Function), parameters) = precompile_methods(
 function speculate_ignored(x::Module, parameters)
     target = parameters.target
     for name in names(x; all = all_names ⊆ target, imported = imported_names ⊆ target)
-        isdefined(x, name) && check_ignore!(getfield(x, name), parameters)
+        isdefined(x, name) && name != :eval && name != :include && name != :_precompile_ && check_ignore!(getfield(x, name), parameters)
     end
 end
 function speculate_ignored(x::Union{DataType, UnionAll, Union}, parameters)

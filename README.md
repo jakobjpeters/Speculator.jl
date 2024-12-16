@@ -11,6 +11,12 @@ In the former case, this can be used in a package as a supplement or alternative
 In the latter case, it can be used in a `startup.jl` file or interactively in the REPL.
 
 Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
+The preexisting package
+[PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
+implements similar functionality, notably that
+`PrecompileSignatures.@precompile_signatures ::Module`
+is roughly equivalent to
+`Speculator.speculate(::Module; target = abstract_subtypes | all_names | union_types)`.
 
 ## Usage
 
@@ -95,6 +101,7 @@ cost ratio in terms of compilation and loading time.
 
 ## Similar Packages
 
+- [PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
 - [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
     - [SnoopCompileCore.jl](https://github.com/timholy/SnoopCompile.jl/tree/master/SnoopCompileCore)

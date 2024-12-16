@@ -2,7 +2,7 @@
 module Speculator
 
 # BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
-# TODO: `methodswith`
+# TODO: `methodswith`, `isexported`, `ispublic`, `strict` targets
 # TODO: tutorial to create a system image?
 # TODO: seperate internal internal and external ignore
 
