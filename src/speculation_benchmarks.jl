@@ -10,7 +10,7 @@
 Benchmark the compilation time saved by the precompilation workload ran by [`speculate`](@ref).
 
 For each of the `samples`, this runs a trial precompilation workload.
-Each trial occurs in a new process, so that precompilation is not cached across trials.
+Each trial occurs in a new process so that precompilation is not cached across trials.
 Each trial runs
 `speculate(::Any;\u00A0ignore,\u00A0target,\u00A0background\u00A0=\u00A0false,\u00A0verbosity\u00A0=\u00A0nothing)`
 sequentially with `dry = true` to compile methods in Speculator.jl, `dry = false`
@@ -54,7 +54,7 @@ struct SpeculationBenchmark
 
         for _ in 1:samples
             run(Cmd(["julia", "--project=$(active_project())", "--eval",
-                "include(\"$(dirname(dirname((@__FILE__))))/scripts/speculation_benchmarks.jl\")",
+                "include(\"$(dirname(dirname((@__FILE__))))/scripts/trials.jl\")",
             data_path, time_path]))
             push!(times, read(time_path, Float64))
         end
