@@ -70,7 +70,7 @@ function speculate(x;
     @nospecialize
     ignore_callables = Set(map(objectid, ignore))
     open(path; write = true) do file
-        parameters = Parameters(background, Ref(0), dry, file, ignore_callables,
+        parameters = Parameters(background && isinteractive(), Ref(0), dry, file, ignore_callables,
             copy(ignore_callables), maximum_methods, Dict{UInt, Vector{DataType}}(),
         Dict{UInt, Vector{Type}}(), Speculator.target(target), Speculator.verbosity(verbosity))
 

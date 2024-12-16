@@ -40,10 +40,14 @@ is_not_vararg(::typeof(Vararg)) = false
 is_not_vararg(_) = true
 
 function log_repl((@nospecialize f), background)
-    flag = background && isinteractive()
-    flag && print(stderr, "\33[2K\r\33[A")
+    if background
+        sleep(0.001)
+        print(stderr, "\r\33[K\33[A")
+    end
+
     f()
-    if flag
+
+    if background
         println(stderr)
         refresh_line(active_repl.mistate)
     end
