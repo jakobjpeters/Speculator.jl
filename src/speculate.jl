@@ -17,6 +17,7 @@ end
     speculate(::Any;
         background::Bool = true,
         dry::Bool = false,
+        path::String = "precompile.jl"
         ignore = $default_ignore,
         maximum_methods::Integer = $default_maximum_methods,
         target::Union{Target, Nothing} = $default_target,
@@ -38,10 +39,13 @@ which may be useful if there are new methods to precompile.
     This is useful for [`time_precompilation`](@ref).
 - `ignore`: An iterable of values that will not be speculated.
 - `maximum_methods`:
-    Ignores a method with an abstract type signature if `abstract_methods` is a subset
-    of the `target` and the number of concrete methods is greater than this value.
+    Ignores a method with an abstract type signature if `abstract_methods` is a
+    subset of `target` and the number of concrete methods is greater than this value.
     This prevents spending too much time precompiling a single generic method,
     but is slower than manually including that function in `ignore`.
+- `path`:
+    Writes the precompilation workload to the file if it is not a `dry` run,
+    precompilation was successful, and `generate` is a subset of `verbosity`.
 - `target`: Specifies what methods to precompile. See also [`Target`](@ref).
 - `verbosity`:
     Specifies what logging statements to show.
@@ -54,18 +58,22 @@ which may be useful if there are new methods to precompile.
 julia> speculate(Speculator)
 ```
 """
-function speculate((@nospecialize x);
+function speculate(x;
     background::Bool = true,
     dry::Bool = false,
     ignore = default_ignore,
     maximum_methods::Integer = default_maximum_methods,
+    path::String = "precompile.jl",
     target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
+    @nospecialize
     ignore_callables = Set(map(objectid, ignore))
-    parameters = Parameters(background, Ref(0), dry, ignore_callables,
-        copy(ignore_callables), maximum_methods, Dict{UInt, Vector{DataType}}(),
-    Dict{UInt, Vector{Type}}(), Speculator.target(target), Speculator.verbosity(verbosity))
+    open(path; write = true) do file
+        parameters = Parameters(background, Ref(0), dry, file, ignore_callables,
+            copy(ignore_callables), maximum_methods, Dict{UInt, Vector{DataType}}(),
+        Dict{UInt, Vector{Type}}(), Speculator.target(target), Speculator.verbosity(verbosity))
 
-    background ? (@spawn _speculate(x, parameters); nothing) : _speculate(x, parameters)
+        background ? (@spawn _speculate(x, parameters); nothing) : _speculate(x, parameters)
+    end
 end

@@ -1,12 +1,12 @@
 
-@flag Verbosity debug review warn
+@flag Verbosity debug generate review warn
 
 @doc """
     Verbosity
 
 A flag that determine what logging statements are shown during [`speculate`](@ref).
 
-The base flags are [`warn`](@ref), [`review`](@ref), and [`debug`](@ref).
+The base flags are [`debug`](@ref), [`generate`](@ref), [`review`](@ref), and [`warn`](@ref).
 
 # Interface
 
@@ -22,50 +22,50 @@ The base flags are [`warn`](@ref), [`review`](@ref), and [`debug`](@ref).
 julia> debug
 debug::Verbsosity
 
-julia> review | warn
-(review | warn)::Verbosity
+julia> generate | review
+(generate | review)::Verbosity
 
-julia> review ⊆ review
+julia> generate ⊆ generate | review
 true
 
-julia> review ⊆ warn
+julia> generate ⊆ debug
 false
 ```
 """ Verbosity
 
 @doc """
-    none
+    debug
 
 A flag of [`Verbosity`](@ref) which specifies that
-[`speculate`](@ref) should show no logging statements.
+[`speculate`](@ref) will show each successful call to `precompile`.
 
 # Examples
 
 ```jldoctest
-julia> none
-none::Verbosity
+julia> debug
+debug::Verbosity
 ```
-""" none
+""" debug
 
 @doc """
-    warn
+    generate
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
-should show warnings for failed calls to `precompile`.
+will append the precompilation workload to the file specified by the `path` keyword parameter.
 
 # Examples
 
 ```jldoctest
-julia> warn
-warn::Verbosity
+julia> debug
+debug::Verbosity
 ```
-""" warn
+""" generate
 
 @doc """
     review
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
-should show the total number of values that have been speculated.
+will show the total number of values that have been speculated.
 
 # Examples
 
@@ -76,15 +76,15 @@ debug::Verbosity
 """ review
 
 @doc """
-    debug
+    warn
 
-A flag of [`Verbosity`](@ref) which specifies that
-[`speculate`](@ref) should show each successful call to `precompile`.
+A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
+will show warnings for failed calls to `precompile`.
 
 # Examples
 
 ```jldoctest
-julia> debug
-debug::Verbosity
+julia> warn
+warn::Verbosity
 ```
-""" debug
+""" warn

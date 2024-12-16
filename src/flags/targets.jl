@@ -33,10 +33,10 @@ abstract_methods::Target
 julia> abstract_subtypes | all_names
 (abstract_subtypes | all_names)::Target
 
-julia> abstract_subtypes ⊆ abstract_subtypes
+julia> abstract_subtypes ⊆ abstract_subtypes | all_names
 true
 
-julia> abstract_subtypes ⊆ all_names
+julia> abstract_subtypes ⊆ callable_objects
 false
 ```
 """ Target

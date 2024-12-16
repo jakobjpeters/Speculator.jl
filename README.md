@@ -81,11 +81,11 @@ cost ratio in terms of compilation and loading time.
 
 ## Features
 
-- Run precompilation workloads for modules, functions, and types.
-    - Configurable to run in the background,
-        show logging statements, and select precompilation targets.
-- Custom REPL mode that runs a workload for every input.
+- Automatically generate a precompilation workload from
+    modules, functions, types, and callable objects.
+    - Configurable to run in the background, select precompilation targets, and write to a file.
 - Estimate the compilation time saved by a workload.
+- Custom REPL mode that runs a workload for every input.
 
 ### Planned
 

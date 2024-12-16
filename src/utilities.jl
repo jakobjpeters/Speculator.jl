@@ -9,6 +9,7 @@ struct Parameters
     background::Bool
     counter::Ref{Int}
     dry::Bool
+    file::IOStream
     ignore_callables::Set{UInt}
     ignore_types::Set{UInt}
     maximum_methods::Int
@@ -58,6 +59,15 @@ function precompile_concrete((@nospecialize x), parameters, (@nospecialize types
     elseif precompile(x, types)
         debug ⊆ verbosity &&
             log_repl(() -> (@info "Precompiled `$(signature(x, types))`"), background)
+
+        if generate ⊆ verbosity
+            file = parameters.file
+
+            print(file, "precompile(")
+            show(file, x)
+            println(file, ", ", types, ')')
+        end
+
         parameters.counter[] += 1
     elseif warn ⊆ verbosity
         log_repl(() -> (
