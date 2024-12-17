@@ -26,7 +26,8 @@ export SpeculationBenchmark, Target, Verbosity,
     method_types, review, union_all_caches, union_types, warn, imported_names,
     install_speculate_mode, speculate
 
-speculate(Speculator; ignore = [default_maximum_methods, default_target],
-    target = abstract_methods | abstract_subtypes | all_names | callable_objects | union_types)
+(@ccall jl_generating_output()::Cint) == 1 &&
+    speculate(Speculator; ignore = [default_maximum_methods, default_target],
+        target = abstract_methods | abstract_subtypes | all_names | callable_objects | union_types)
 
 end # Speculator
