@@ -6,7 +6,7 @@ function _speculate((@nospecialize x), parameters)
         counter = parameters.counter[]
         seconds = round_time(elapsed)
         statement = parameters.dry ? "Found" : "Precompiled"
-        values = sum(length, [parameters.ignore_callables, parameters.ignore_types])
+        values = length(parameters.ignore)
 
         log_repl(() -> (
             @info "$statement `$counter` methods from `$values` values in `$seconds` seconds"),
@@ -69,12 +69,11 @@ function speculate(x;
     verbosity::Union{Verbosity, Nothing} = warn
 )
     @nospecialize
-    ignore_callables = Set(map(objectid, ignore))
     _verbosity = Speculator.verbosity(verbosity)
 
     open(!dry && generate ⊆ _verbosity ? path : tempname(); write = true) do file
-        parameters = Parameters(background && isinteractive(), Ref(0), dry, file, ignore_callables,
-            copy(ignore_callables), maximum_methods, Dict{UInt, Vector{DataType}}(),
+        parameters = Parameters(background && isinteractive(), Ref(0),
+            dry, file, IdSet{Any}(ignore), maximum_methods, Dict{UInt, Vector{DataType}}(),
         Dict{UInt, Vector{Type}}(), Speculator.target(target), _verbosity)
 
         background ? (@spawn _speculate(x, parameters); nothing) : _speculate(x, parameters)

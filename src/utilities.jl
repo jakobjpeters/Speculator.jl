@@ -10,30 +10,28 @@ struct Parameters
     counter::Ref{Int}
     dry::Bool
     file::IOStream
-    ignore_callables::Set{UInt}
-    ignore_types::Set{UInt}
+    ignore::IdSet{Any}
     maximum_methods::Int
-    product_cache::Dict{UInt, Vector{DataType}}
-    subtype_cache::Dict{UInt, Vector{Type}}
+    product_cache::IdDict{Type, Vector{DataType}}
+    subtype_cache::IdDict{DataType, Vector{Type}}
     target::Target
     verbosity::Verbosity
 end
 
-ignore!(f, ignore, object_id, (@nospecialize x), parameters) =
-    if !(object_id in ignore)
-        push!(ignore, object_id)
+function ignore!(f, (@nospecialize x), parameters)
+    ignore = parameters.ignore
+    if !(x in ignore)
+        push!(ignore, x)
         f(x, parameters)
     end
+end
 
 check_ignore!((@nospecialize x::Union{DataType, Function, Module, UnionAll, Union}), parameters) =
-    ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters),
-        parameters.ignore_types, objectid(x), x, parameters)
+    ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), x, parameters)
 function check_ignore!((@nospecialize x::T), parameters) where T
-    object_id = objectid(T)
-    callable_objects ⊆ parameters.target && ignore!(((@nospecialize _x), _parameters) -> 
-        precompile_methods(_x, _parameters), parameters.ignore_callables, object_id, x, parameters)
-    ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters),
-        parameters.ignore_types, object_id, T, parameters)
+    callable_objects ⊆ parameters.target && ignore!(
+        ((@nospecialize _x), _parameters) -> precompile_methods(_x, _parameters), x, parameters)
+    ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), T, parameters)
 end
 
 is_not_vararg(::typeof(Vararg)) = false
@@ -95,7 +93,8 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
             if all(is_not_vararg, parameter_types)
                 product_types = map(eachindex(parameter_types)) do i
                     parameter_type = parameter_types[i]
-                    get!(parameters.product_cache, objectid(parameter_type)) do
+
+                    get!(parameters.product_cache, parameter_type) do
                         branches, leaves = Type[parameter_type], DataType[]
                         no_specialize = (nospecialize >> (i - 1)) & 1 == 1
 
@@ -169,8 +168,7 @@ end
 
 subtypes!(x::DataType, parameters) =
     if abstract_subtypes ⊆ parameters.target
-        get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)),
-            parameters.subtype_cache, objectid(x))
+        get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)), parameters.subtype_cache, x)
     else []
     end
 subtypes!(x::UnionAll, parameters) =
