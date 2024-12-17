@@ -8,7 +8,9 @@ module Speculator
 # TODO: document and skip methods that are already specialized
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
-using Base: Threads.@spawn, active_project, active_repl, Iterators.product, uniontypes
+using Base:
+    Threads.@spawn, active_project, active_repl,
+    loaded_modules_array, Iterators.product, uniontypes
 using InteractiveUtils: subtypes
 using Serialization: serialize
 using Statistics: mean, median
