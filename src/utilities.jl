@@ -34,9 +34,6 @@ function check_ignore!((@nospecialize x::T), parameters) where T
     ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), T, parameters)
 end
 
-is_not_vararg(::typeof(Vararg)) = false
-is_not_vararg(_) = true
-
 function log_repl((@nospecialize f), background)
     if background
         sleep(0.001)
@@ -90,7 +87,7 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
         parameter_types = sig.types[(begin + 1):end]
 
         if abstract_methods ⊆ target
-            if all(is_not_vararg, parameter_types)
+            if !any(isvarargtype, parameter_types)
                 product_types = map(eachindex(parameter_types)) do i
                     parameter_type = parameter_types[i]
 
@@ -177,7 +174,8 @@ subtypes!(x::Union, parameters) = union_types ⊆ parameters.target ? uniontypes
 
 union_all_cache!(types, x::DataType, _) =
     append!(types, Iterators.filter(!isnothing, x.name.cache))
-union_all_cache!(types, x::UnionAll, parameters) = union_all_cache!(types, x.body, parameters)
+union_all_cache!(types, x::UnionAll, parameters) =
+    union_all_cache!(types, unwrap_unionall(x), parameters)
 function union_all_cache!(types, x::Union, parameters)
     for type in subtypes!(x, parameters)
         union_all_cache!(types, type, parameters)
