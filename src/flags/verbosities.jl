@@ -48,20 +48,6 @@ debug::Verbosity
 """ debug
 
 @doc """
-    generate
-
-A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
-will append the precompilation workload to the file specified by the `path` keyword parameter.
-
-# Examples
-
-```jldoctest
-julia> debug
-debug::Verbosity
-```
-""" generate
-
-@doc """
     review
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)

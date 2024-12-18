@@ -7,7 +7,7 @@ const default_target = nothing
 
 struct Parameters
     background::Bool
-    counter::RefValue{Int}
+    counters::Dict{Symbol, Int}
     dry::Bool
     file::IOStream
     generate::Bool
@@ -37,7 +37,14 @@ function check_ignore!((@nospecialize x::T), parameters) where T
     ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), T, parameters)
 end
 
-function log_repl((@nospecialize f), background)
+log_debug(statement, (@nospecialize x), parameters, (@nospecialize types)) =
+    if debug ⊆ parameters.verbosity
+        log_repl(() -> (@info "$statement `$(signature(x, types))`"), parameters)
+    end
+
+function log_repl((@nospecialize f), parameters)
+    background = parameters.background
+
     if background
         sleep(0.001)
         print(stderr, "\r\33[K\33[A")
@@ -51,40 +58,48 @@ function log_repl((@nospecialize f), background)
     end
 end
 
-function precompile_concrete((@nospecialize x), parameters, (@nospecialize types))
-    background, verbosity = parameters.background, parameters.verbosity
+function precompile_concrete((@nospecialize x), parameters, specializations, (@nospecialize types))
+    background = parameters.background
+    counters = parameters.counters
+    verbosity = parameters.verbosity
 
     if parameters.dry
-        debug ⊆ verbosity &&
-            log_repl(() -> (@info "Found `$(signature(x, types))`"), background)
-        parameters.counter[] += 1
-    elseif precompile(x, types)
-        debug ⊆ verbosity &&
-            log_repl(() -> (@info "Precompiled `$(signature(x, types))`"), background)
+        log_debug("Found", x, parameters, types)
+        counters[:found] += 1
+    elseif Tuple{Typeof(x), types...} in specializations
+        log_debug("Skipped", x, parameters, types)
+        counters[:skipped] += 1
+    else
+        background, verbosity = parameters.background, parameters.verbosity
 
-        if parameters.generate
-            file = parameters.file
+        if precompile(x, types)
+            log_debug("Precompiled", x, parameters, types)
+            counters[:precompiled] += 1
 
-            print(file, "precompile(")
-            show(file, x)
-            println(file, ", ", types, ')')
-            @show 1
+            if parameters.generate
+                file = parameters.file
+
+                print(file, "precompile(")
+                show(file, x)
+                println(file, ", ", types, ')')
+            end
+        elseif warn ⊆ verbosity
+            log_repl(() -> (
+                @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"
+            ), parameters)
+            counters[:warned] += 1
         end
-
-        parameters.counter[] += 1
-    elseif warn ⊆ verbosity
-        log_repl(() -> (
-            @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"),
-        background)
     end
 end
 
 precompile_methods((@nospecialize x), parameters) =
     for method in methods(x)
-        precompile_method(x, parameters, method.nospecialize, method.sig)
+        precompile_method(x, parameters, method, method.sig)
     end
 
-function precompile_method((@nospecialize x), parameters, nospecialize, sig::DataType)
+function precompile_method((@nospecialize x), parameters, method, sig::DataType)
+    no_specialize = method.nospecialize
+    _specializations = map(x -> x.specTypes, specializations(method))
     target = parameters.target
 
     if !(Tuple <: sig)
@@ -96,7 +111,7 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
                     parameter_type = parameter_types[i]
                     branches = Type[parameter_type]
 
-                    if is_subset(1, nospecialize >> (i - 1)) branches
+                    if is_subset(1, no_specialize >> (i - 1)) branches
                     else
                         get!(parameters.product_cache, parameter_type) do
                             leaves = Type[]
@@ -126,11 +141,11 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
 
                     count ≤ parameters.maximum_methods
                 end && for concrete_types in product(product_types...)
-                    precompile_concrete(x, parameters, concrete_types)
+                    precompile_concrete(x, parameters, _specializations, concrete_types)
                 end
             end
         elseif all(isconcretetype, parameter_types)
-            precompile_concrete(x, parameters, (parameter_types...,))
+            precompile_concrete(x, parameters, _specializations, (parameter_types...,))
         end
 
         if method_types ⊆ target

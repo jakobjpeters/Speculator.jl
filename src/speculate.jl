@@ -3,14 +3,21 @@ function ___speculate((@nospecialize x), parameters)
     elapsed = @elapsed check_ignore!(x, parameters)
 
     if review ⊆ parameters.verbosity
-        counter = parameters.counter[]
-        seconds = round_time(elapsed)
-        statement = parameters.dry ? "Found" : "Precompiled"
-        values = length(parameters.ignore)
+        counters = parameters.counters
+        dry = parameters.dry
 
-        log_repl(() -> (
-            @info "$statement `$counter` methods from `$values` values in `$seconds` seconds"),
-        parameters.background)
+        log_repl(parameters) do
+            values = length(parameters.ignore)
+            seconds = round_time(elapsed)
+            s = " methods from `$values` values in `$seconds` seconds"
+
+            if dry @info "Found `$(counters[:found])`$s"
+            else
+                precompiled, skipped, warned =
+                    map(s -> counters[s], [:precompiled, :skipped, :warned])
+                @info "Precompiled `$precompiled`, skipped `$skipped`, and warned `$warned`$s"
+            end
+        end
     end
 end
 
@@ -34,9 +41,19 @@ function _speculate(x;
     _verbosity = Speculator.verbosity(verbosity)
 
     open(generate ? path : tempname(); write = true) do file
-        parameters = Parameters(background && isinteractive(), Ref(0), dry,
-            file, generate, IdSet{Any}(ignore), maximum_methods, IdDict{Type, Vector{Type}}(),
-        IdDict{DataType, Vector{Type}}(), Speculator.target(target), _verbosity)
+        parameters = Parameters(
+            background && isinteractive(),
+            Dict(map(s -> s => 0, dry ? [:found] : [:skipped, :precompiled, :warned])),
+            dry,
+            file,
+            generate,
+            IdSet{Any}(ignore),
+            maximum_methods,
+            IdDict{Type, Vector{Type}}(),
+            IdDict{DataType, Vector{Type}}(),
+            Speculator.target(target),
+            _verbosity,
+        )
         background ? (@spawn __speculate(x, parameters); nothing) : __speculate(x, parameters)
     end
 end
@@ -67,7 +84,7 @@ which may be useful if there are new methods to precompile.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
 - `dry::Bool = false`:
     Specifies whether to actually run `precompile`.
-    This is useful for [`time_precompilation`](@ref).
+    This is useful for testing workloads and in [`time_precompilation`](@ref).
 - `ignore = $default_ignore`: An iterable of values that will not be speculated.
 - `maximum_methods::Integer = $default_maximum_methods`:
     Ignores a method with an abstract type signature if `abstract_methods` is a

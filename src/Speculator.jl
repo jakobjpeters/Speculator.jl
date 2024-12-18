@@ -10,7 +10,8 @@ module Speculator
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
 using Base:
     RefValue, Threads.@spawn, active_project, active_repl, isvarargtype,
-    loaded_modules_array, Iterators.product, uniontypes
+    loaded_modules_array, Iterators.product, specializations, uniontypes
+using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
 using Serialization: serialize
 using Statistics: mean, median
@@ -30,6 +31,6 @@ export SpeculationBenchmark, Target, Verbosity,
 
 (@ccall jl_generating_output()::Cint) == 1 &&
     speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],
-        target = abstract_methods | abstract_subtypes | all_names | callable_objects | union_types)
+        target = abstract_methods | abstract_subtypes | all_names | union_types)
 
 end # Speculator
