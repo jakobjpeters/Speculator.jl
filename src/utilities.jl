@@ -5,9 +5,11 @@ const default_maximum_methods = 2 ^ 8
 
 const default_target = nothing
 
+@enum Counter found skipped precompiled warned
+
 struct Parameters
     background::Bool
-    counters::Dict{Symbol, Int}
+    counters::Dict{Counter, Int}
     dry::Bool
     file::IOStream
     generate::Bool
@@ -65,16 +67,16 @@ function precompile_concrete((@nospecialize x), parameters, specializations, (@n
 
     if parameters.dry
         log_debug("Found", x, parameters, types)
-        counters[:found] += 1
+        counters[found] += 1
     elseif Tuple{Typeof(x), types...} in specializations
         log_debug("Skipped", x, parameters, types)
-        counters[:skipped] += 1
+        counters[skipped] += 1
     else
         background, verbosity = parameters.background, parameters.verbosity
 
         if precompile(x, types)
             log_debug("Precompiled", x, parameters, types)
-            counters[:precompiled] += 1
+            counters[precompiled] += 1
 
             if parameters.generate
                 file = parameters.file
@@ -87,7 +89,7 @@ function precompile_concrete((@nospecialize x), parameters, specializations, (@n
             log_repl(() -> (
                 @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"
             ), parameters)
-            counters[:warned] += 1
+            counters[warned] += 1
         end
     end
 end

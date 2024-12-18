@@ -11,11 +11,11 @@ function ___speculate((@nospecialize x), parameters)
             seconds = round_time(elapsed)
             s = " methods from `$values` values in `$seconds` seconds"
 
-            if dry @info "Found `$(counters[:found])`$s"
+            if dry @info "Found `$(counters[found])`$s"
             else
-                precompiled, skipped, warned =
-                    map(s -> counters[s], [:precompiled, :skipped, :warned])
-                @info "Precompiled `$precompiled`, skipped `$skipped`, and warned `$warned`$s"
+                _precompiled, _skipped, _warned =
+                    map(s -> counters[s], [precompiled, skipped, warned])
+                @info "Precompiled `$_precompiled`, skipped `$_skipped`, and warned `$_warned`$s"
             end
         end
     end
@@ -43,7 +43,7 @@ function _speculate(x;
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(
             background && isinteractive(),
-            Dict(map(s -> s => 0, dry ? [:found] : [:skipped, :precompiled, :warned])),
+            Dict(map(s -> s => 0, dry ? [found] : [skipped, precompiled, warned])),
             dry,
             file,
             generate,
