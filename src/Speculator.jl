@@ -29,7 +29,7 @@ export SpeculationBenchmark, Target, Verbosity,
     install_speculate_mode, speculate
 
 (@ccall jl_generating_output()::Cint) == 1 &&
-    speculate(Speculator; ignore = [default_maximum_methods, default_target],
+    speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],
         target = abstract_methods | abstract_subtypes | all_names | callable_objects | union_types)
 
 end # Speculator

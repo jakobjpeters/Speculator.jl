@@ -92,11 +92,12 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
             if !any(isvarargtype, parameter_types)
                 product_types = map(eachindex(parameter_types)) do i
                     parameter_type = parameter_types[i]
+                    branches = Type[parameter_type]
 
-                    if is_subset(1, nospecialize >> (i - 1)) Type[parameter_type]
+                    if is_subset(1, nospecialize >> (i - 1)) branches
                     else
                         get!(parameters.product_cache, parameter_type) do
-                            branches, leaves = Type[parameter_type], Type[]
+                            leaves = Type[]
 
                             while !isempty(branches)
                                 branch = pop!(branches)
