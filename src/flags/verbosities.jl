@@ -1,12 +1,12 @@
 
-@flag Verbosity debug generate review warn
+@flag Verbosity debug review warn
 
 @doc """
     Verbosity
 
 A flag that determine what logging statements are shown during [`speculate`](@ref).
 
-The base flags are [`debug`](@ref), [`generate`](@ref), [`review`](@ref), and [`warn`](@ref).
+The base flags are [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
 
 # Interface
 
@@ -22,13 +22,13 @@ The base flags are [`debug`](@ref), [`generate`](@ref), [`review`](@ref), and [`
 julia> debug
 debug::Verbsosity
 
-julia> generate | review
-(generate | review)::Verbosity
+julia> review | warn
+(review | warn)::Verbosity
 
-julia> generate ⊆ generate | review
+julia> review ⊆ review | warn
 true
 
-julia> generate ⊆ debug
+julia> review ⊆ warn
 false
 ```
 """ Verbosity

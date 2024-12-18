@@ -10,6 +10,7 @@ struct Parameters
     counter::RefValue{Int}
     dry::Bool
     file::IOStream
+    generate::Bool
     ignore::IdSet{Any}
     maximum_methods::Int
     product_cache::IdDict{Type, Vector{Type}}
@@ -61,12 +62,13 @@ function precompile_concrete((@nospecialize x), parameters, (@nospecialize types
         debug ⊆ verbosity &&
             log_repl(() -> (@info "Precompiled `$(signature(x, types))`"), background)
 
-        if generate ⊆ verbosity
+        if parameters.generate
             file = parameters.file
 
             print(file, "precompile(")
             show(file, x)
             println(file, ", ", types, ')')
+            @show 1
         end
 
         parameters.counter[] += 1

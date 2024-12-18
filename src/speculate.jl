@@ -29,12 +29,14 @@ function _speculate(x;
     verbosity::Union{Verbosity, Nothing} = warn
 )
     @nospecialize
-    _verbosity = Speculator.verbosity(verbosity)
-    open(!dry && generate ⊆ _verbosity ? path : tempname(); write = true) do file
-        parameters = Parameters(background && isinteractive(), Ref(0),
-            dry, file, IdSet{Any}(ignore), maximum_methods, IdDict{Type, Vector{Type}}(),
-        IdDict{DataType, Vector{Type}}(), Speculator.target(target), _verbosity)
 
+    generate = !(dry || isempty(path))
+    _verbosity = Speculator.verbosity(verbosity)
+
+    open(generate ? path : tempname(); write = true) do file
+        parameters = Parameters(background && isinteractive(), Ref(0), dry,
+            file, generate, IdSet{Any}(ignore), maximum_methods, IdDict{Type, Vector{Type}}(),
+        IdDict{DataType, Vector{Type}}(), Speculator.target(target), _verbosity)
         background ? (@spawn __speculate(x, parameters); nothing) : __speculate(x, parameters)
     end
 end
@@ -72,9 +74,9 @@ which may be useful if there are new methods to precompile.
     subset of `target` and the number of concrete methods is greater than this value.
     This prevents spending too much time precompiling a single generic method,
     but is slower than manually including that function in `ignore`.
-- `path::String = "precompile.jl"`:
-    Writes the precompilation workload to the file if it is not a `dry` run,
-    precompilation was successful, and `generate` is a subset of `verbosity`.
+- `path::String = ""`:
+    Writes each successful precompilation directive to a file
+    if the `path` is not empty and it is not a `dry` run.
 - `target::Union{Target, Nothing} = $default_target`:
     Specifies what methods to precompile. See also [`Target`](@ref).
 - `verbosity::Union{Verbosity, Nothing} = warn`:
