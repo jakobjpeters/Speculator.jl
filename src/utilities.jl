@@ -7,7 +7,7 @@ const default_target = nothing
 
 struct Parameters
     background::Bool
-    counter::Ref{Int}
+    counter::RefValue{Int}
     dry::Bool
     file::IOStream
     ignore::IdSet{Any}
