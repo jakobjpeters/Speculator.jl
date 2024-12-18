@@ -30,5 +30,5 @@ function install_speculate_mode(; start_key = "\\M-s",
             $x
         end
     end
-    @info "The `speculate` REPL mode has been installed. Press [$start_key] to enter and [Backspace] to exit."
+    @info "The `$speculate` REPL mode has been installed. Press [$start_key] to enter and [Backspace] to exit."
 end

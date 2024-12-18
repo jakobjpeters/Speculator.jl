@@ -31,19 +31,16 @@ function _speculate(x;
     dry::Bool = false,
     ignore = default_ignore,
     maximum_methods::Integer = default_maximum_methods,
-    path::String = "precompile.jl",
+    path::String = "",
     target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
     @nospecialize
-
     generate = !(dry || isempty(path))
-    _verbosity = Speculator.verbosity(verbosity)
-
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(
             background && isinteractive(),
-            Dict(map(s -> s => 0, dry ? [found] : [skipped, precompiled, warned])),
+            Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
             dry,
             file,
             generate,
@@ -52,7 +49,7 @@ function _speculate(x;
             IdDict{Type, Vector{Type}}(),
             IdDict{DataType, Vector{Type}}(),
             Speculator.target(target),
-            _verbosity,
+            Speculator.verbosity(verbosity),
         )
         background ? (@spawn __speculate(x, parameters); nothing) : __speculate(x, parameters)
     end

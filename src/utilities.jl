@@ -39,10 +39,16 @@ function check_ignore!((@nospecialize x::T), parameters) where T
     ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), T, parameters)
 end
 
-log_debug(statement, (@nospecialize x), parameters, (@nospecialize types)) =
+function log_debug(counter, (@nospecialize x), parameters, (@nospecialize types))
+    parameters.counters[counter] += 1
+
     if debug ⊆ parameters.verbosity
-        log_repl(() -> (@info "$statement `$(signature(x, types))`"), parameters)
+        _signature = signature(x, types)
+        statement = uppercasefirst(string(counter))
+
+        log_repl(() -> (@info "$statement `$_signature`"), parameters)
     end
+end
 
 function log_repl((@nospecialize f), parameters)
     background = parameters.background
@@ -61,36 +67,27 @@ function log_repl((@nospecialize f), parameters)
 end
 
 function precompile_concrete((@nospecialize x), parameters, specializations, (@nospecialize types))
-    background = parameters.background
     counters = parameters.counters
-    verbosity = parameters.verbosity
 
-    if parameters.dry
-        log_debug("Found", x, parameters, types)
-        counters[found] += 1
-    elseif Tuple{Typeof(x), types...} in specializations
-        log_debug("Skipped", x, parameters, types)
-        counters[skipped] += 1
-    else
-        background, verbosity = parameters.background, parameters.verbosity
+    if parameters.dry log_debug(found, x, parameters, types)
+    elseif Tuple{Typeof(x), types...} in specializations log_debug(skipped, x, parameters, types)
+    elseif precompile(x, types)
+        log_debug(precompiled, x, parameters, types)
 
-        if precompile(x, types)
-            log_debug("Precompiled", x, parameters, types)
-            counters[precompiled] += 1
+        if parameters.generate
+            file = parameters.file
 
-            if parameters.generate
-                file = parameters.file
-
-                print(file, "precompile(")
-                show(file, x)
-                println(file, ", ", types, ')')
-            end
-        elseif warn ⊆ verbosity
-            log_repl(() -> (
-                @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$(signature(x, types))`"
-            ), parameters)
-            counters[warned] += 1
+            print(file, "precompile(")
+            show(file, x)
+            println(file, ", ", types, ')')
         end
+    elseif warn ⊆ parameters.verbosity
+        _signature = signature(x, types)
+        counters[warned] += 1
+
+        log_repl(() -> (
+            @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
+        ), parameters)
     end
 end
 
@@ -99,16 +96,16 @@ precompile_methods((@nospecialize x), parameters) =
         precompile_method(x, parameters, method, method.sig)
     end
 
-function precompile_method((@nospecialize x), parameters, method, sig::DataType)
-    no_specialize = method.nospecialize
-    _specializations = map(x -> x.specTypes, specializations(method))
-    target = parameters.target
-
+precompile_method((@nospecialize x), parameters, method, sig::DataType) =
     if !(Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
+        _specializations = map(x -> x.specTypes, specializations(method))
+        target = parameters.target
 
         if abstract_methods ⊆ target
             if !any(isvarargtype, parameter_types)
+                no_specialize = method.nospecialize
+
                 product_types = map(eachindex(parameter_types)) do i
                     parameter_type = parameter_types[i]
                     branches = Type[parameter_type]
@@ -156,7 +153,6 @@ function precompile_method((@nospecialize x), parameters, method, sig::DataType)
             end
         end
     end
-end
 precompile_method((@nospecialize x), parameters, nospecialize, sig::UnionAll) = nothing
 
 function round_time(x)
