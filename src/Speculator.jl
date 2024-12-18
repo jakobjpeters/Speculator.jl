@@ -9,7 +9,7 @@ module Speculator
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
 using Base:
-    Threads.@spawn, active_project, active_repl,
+    Threads.@spawn, active_project, active_repl, isvarargtype,
     loaded_modules_array, Iterators.product, uniontypes
 using InteractiveUtils: subtypes
 using Serialization: serialize

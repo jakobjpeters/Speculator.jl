@@ -16,8 +16,6 @@ macro flag(type, names...)
 
             Base.:|(f::$type_name, _f::$type_name) = new(f.value | _f.value)
 
-            is_subset(f, _f) = f == (f & _f)
-
             Base.issubset(f::$type_name, _f::$type_name) = is_subset(f.value, _f.value)
 
             function Base.show(io::IO, flag::$type_name)

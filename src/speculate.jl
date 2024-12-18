@@ -32,7 +32,7 @@ function _speculate(x;
     _verbosity = Speculator.verbosity(verbosity)
     open(!dry && generate ⊆ _verbosity ? path : tempname(); write = true) do file
         parameters = Parameters(background && isinteractive(), Ref(0),
-            dry, file, IdSet{Any}(ignore), maximum_methods, Dict{UInt, Vector{DataType}}(),
+            dry, file, IdSet{Any}(ignore), maximum_methods, Dict{UInt, Vector{Type}}(),
         Dict{UInt, Vector{Type}}(), Speculator.target(target), _verbosity)
 
         background ? (@spawn __speculate(x, parameters); nothing) : __speculate(x, parameters)

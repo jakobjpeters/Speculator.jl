@@ -12,7 +12,7 @@ struct Parameters
     file::IOStream
     ignore::IdSet{Any}
     maximum_methods::Int
-    product_cache::IdDict{Type, Vector{DataType}}
+    product_cache::IdDict{Type, Vector{Type}}
     subtype_cache::IdDict{DataType, Vector{Type}}
     target::Target
     verbosity::Verbosity
@@ -25,6 +25,8 @@ function ignore!(f, (@nospecialize x), parameters)
         f(x, parameters)
     end
 end
+
+is_subset(f, _f) = f == (f & _f)
 
 check_ignore!((@nospecialize x::Union{DataType, Function, Module, UnionAll, Union}), parameters) =
     ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), x, parameters)
@@ -91,22 +93,23 @@ function precompile_method((@nospecialize x), parameters, nospecialize, sig::Dat
                 product_types = map(eachindex(parameter_types)) do i
                     parameter_type = parameter_types[i]
 
-                    get!(parameters.product_cache, parameter_type) do
-                        branches, leaves = Type[parameter_type], DataType[]
-                        no_specialize = (nospecialize >> (i - 1)) & 1 == 1
+                    if is_subset(1, nospecialize >> (i - 1)) Type[parameter_type]
+                    else
+                        get!(parameters.product_cache, parameter_type) do
+                            branches, leaves = Type[parameter_type], Type[]
 
-                        while !isempty(branches)
-                            branch = pop!(branches)
+                            while !isempty(branches)
+                                branch = pop!(branches)
 
-                            if isconcretetype(branch) &&
-                                !any(type -> type <: branch, [DataType, UnionAll, Union])
-                                push!(leaves, branch)
-                                no_specialize && break
-                            else append!(branches, subtypes!(branch, parameters))
+                                if isconcretetype(branch) &&
+                                    !any(type -> type <: branch, [DataType, UnionAll, Union])
+                                    push!(leaves, branch)
+                                else append!(branches, subtypes!(branch, parameters))
+                                end
                             end
-                        end
 
-                        leaves
+                            leaves
+                        end
                     end
                 end
 
