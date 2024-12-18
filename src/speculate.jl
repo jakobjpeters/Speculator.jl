@@ -20,7 +20,7 @@ __speculate(::Nothing, parameters) = for _module in loaded_modules_array()
 end
 
 function _speculate(x;
-    background::Bool = true,
+    background::Bool = false,
     dry::Bool = false,
     ignore = default_ignore,
     maximum_methods::Integer = default_maximum_methods,
@@ -60,7 +60,7 @@ which may be useful if there are new methods to precompile.
 
 # Keyword parameters
 
-- `background::Bool = true`:
+- `background::Bool = false`:
     Specifies whether to precompile on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
 - `dry::Bool = false`:
