@@ -33,10 +33,27 @@ julia> add(; url = "https://github.com/jakobjpeters/Speculator.jl")
 ```julia-repl
 julia> using Speculator
 
-julia> speculate(Iterators;
-           verbosity = debug | review,
-           target = method_types | union_types
+julia> speculate_repl(;
+           target = all_names,
+           verbosity = debug
        )
+[ Info: The REPL will call `speculate` on each input
+
+julia> module Showcase
+           export g
+
+           f(::Int) = nothing
+           g(::Union{String, Symbol}) = nothing
+       end
+Main.Showcase
+[ Info: Precompiled `Main.Showcase.g(::Int64)
+
+julia> speculate(Showcase;
+           target = abstract_methods | union_types,
+           verbosity = debug
+       )
+[ Info: Precompiled `Main.Showcase.g(::Symbol)`
+[ Info: Precompiled `Main.Showcase.g(::String)`
 ```
 
 ## Case Study

@@ -238,7 +238,25 @@ which may be useful if there are new methods to precompile.
 
 # Examples
 ```jldoctest
-julia> speculate(Speculator)
+julia> module Example
+           export g
+
+           f(::Int) = nothing
+           g(::Union{String, Symbol}) = nothing
+       end;
+
+julia> speculate(Example;
+           target = all_names,
+           verbosity = debug
+       )
+[ Info: Precompiled `Main.Example.f(::Int64)`
+
+julia> speculate(Example;
+           target = abstract_methods | union_types,
+           verbosity = debug
+       )
+[ Info: Precompiled `Main.Example.g(::Symbol)`
+[ Info: Precompiled `Main.Example.g(::String)`
 ```
 """
 speculate

@@ -10,26 +10,25 @@ module Speculator
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
 using Base:
-    MethodList, RefValue, Threads.@spawn, active_project, active_repl, isvarargtype,
+    MethodList, RefValue, Threads.@spawn, active_project, isvarargtype,
     loaded_modules_array, Iterators.product, specializations, uniontypes
 using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
 using Serialization: serialize
 using Statistics: mean, median
 using REPL: LineEdit.refresh_line
-using ReplMaker: complete_julia, initrepl
 
 include("flags/flags.jl")
 include("utilities.jl")
 include("speculation_benchmarks.jl")
 include("speculate.jl")
-include("install_speculate_mode.jl")
+include("speculate_repl.jl")
 
 export SpeculationBenchmark, Target, Verbosity,
     abstract_methods, abstract_subtypes, all_names, callable_objects, imported_names,
     instance_types, method_types, tuple_types, type_caches, union_all_types, union_types,
     debug, review, warn,
-    install_speculate_mode, speculate
+    speculate_repl, speculate
 
 (@ccall jl_generating_output()::Cint) == 1 &&
     speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],

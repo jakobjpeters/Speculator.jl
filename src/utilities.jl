@@ -63,7 +63,7 @@ function log_repl((@nospecialize f), parameters)
 
     if background
         println(stderr)
-        refresh_line(active_repl.mistate)
+        refresh_line(Base.active_repl.mistate)
     end
 end
 
