@@ -24,57 +24,56 @@ function precompile_method((@nospecialize x), parameters, specializations, (@nos
     end
 end
 
-precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
-    if !(Tuple <: sig)
-        parameter_types = sig.types[(begin + 1):end]
-        _specializations = map(x -> x.specTypes, specializations(method))
-        target = parameters.target
+function precompile_methods((@nospecialize x), parameters, method, sig::DataType)
+    parameter_types = sig.types[(begin + 1):end]
+    _specializations = map(x -> x.specTypes, specializations(method))
+    target = parameters.target
 
-        if abstract_methods ⊆ target
-            if !any(isvarargtype, parameter_types)
-                no_specialize = method.nospecialize
+    if abstract_methods ⊆ target
+        if !any(isvarargtype, parameter_types)
+            no_specialize = method.nospecialize
 
-                product_types = map(eachindex(parameter_types)) do i
-                    parameter_type = parameter_types[i]
-                    branches = Type[parameter_type]
+            product_types = map(eachindex(parameter_types)) do i
+                parameter_type = parameter_types[i]
+                branches = Type[parameter_type]
 
-                    if is_subset(1, no_specialize >> (i - 1)) branches
-                    else
-                        get!(parameters.product_cache, parameter_type) do
-                            leaves = Type[]
+                if is_subset(1, no_specialize >> (i - 1)) branches
+                else
+                    get!(parameters.product_cache, parameter_type) do
+                        leaves = Type[]
 
-                            while !isempty(branches)
-                                branch = pop!(branches)
+                        while !isempty(branches)
+                            branch = pop!(branches)
 
-                                if isconcretetype(branch)
-                                    any(type -> type <: branch, [DataType, UnionAll, Union]) ||
-                                        push!(leaves, branch)
-                                else append!(branches, subtypes!(branch, parameters))
-                                end
+                            if isconcretetype(branch)
+                                any(type -> type <: branch, [DataType, UnionAll, Union]) ||
+                                    push!(leaves, branch)
+                            else append!(branches, subtypes!(branch, parameters))
                             end
-
-                            leaves
                         end
+
+                        leaves
                     end
-                end
-
-                isempty(product_types) || begin
-                    count = 1
-
-                    for product_type in product_types
-                        count, overflow = mul_with_overflow(count, length(product_type))
-                        overflow && return false
-                    end
-
-                    count ≤ parameters.maximum_methods
-                end && for concrete_types in product(product_types...)
-                    precompile_method(x, parameters, _specializations, concrete_types)
                 end
             end
-        elseif all(isconcretetype, parameter_types)
-            precompile_method(x, parameters, _specializations, (parameter_types...,))
+
+            isempty(product_types) || begin
+                count = 1
+
+                for product_type in product_types
+                    count, overflow = mul_with_overflow(count, length(product_type))
+                    overflow && return false
+                end
+
+                count ≤ parameters.maximum_methods
+            end && for concrete_types in product(product_types...)
+                precompile_method(x, parameters, _specializations, concrete_types)
+            end
         end
+    elseif all(isconcretetype, parameter_types)
+        precompile_method(x, parameters, _specializations, (parameter_types...,))
     end
+end
 precompile_methods((@nospecialize x), _, _, _::UnionAll) = nothing
 
 function search(x::DataType, parameters)
@@ -89,7 +88,7 @@ function search(x::DataType, parameters)
     instance_types ⊆ target && isdefined(x, :instance) &&
         check_searched(x.instance, parameters)
 
-    if tuple_types ⊆ target
+    if tuple_types ⊆ target && isdefined(x, :types)
         for type in x.types
             check_searched(type, parameters)
         end
@@ -146,7 +145,7 @@ function log_review((@nospecialize x), parameters)
         dry = parameters.dry
 
         log_repl(parameters) do
-            values = length(parameters.ignored)
+            values = length(parameters.searched)
             seconds = round_time(elapsed)
             s = " methods from `$values` values in `$seconds` seconds"
 

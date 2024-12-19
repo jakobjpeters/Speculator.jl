@@ -12,10 +12,10 @@ TODO: document time to search for every possible method:
     `speculate(; target = all_names | instance_types, verbosity = review)`
 =#
 
-import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
+import Base: eltype, firstindex, getindex, iterate, lastindex, length, show
 using Base:
-    MethodList, RefValue, Threads.@spawn, active_project, isvarargtype,
-    loaded_modules_array, Iterators.product, specializations, uniontypes
+    MethodList, RefValue, Threads.@spawn, active_project, isvarargtype, loaded_modules_array,
+    mul_with_overflow, Iterators.product, specializations, uniontypes, unwrap_unionall
 using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
 using Serialization: serialize
