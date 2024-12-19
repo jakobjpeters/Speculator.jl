@@ -10,7 +10,7 @@ module Speculator
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
 using Base:
-    RefValue, Threads.@spawn, active_project, active_repl, isvarargtype,
+    MethodList, RefValue, Threads.@spawn, active_project, active_repl, isvarargtype,
     loaded_modules_array, Iterators.product, specializations, uniontypes
 using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
@@ -26,8 +26,9 @@ include("speculate.jl")
 include("install_speculate_mode.jl")
 
 export SpeculationBenchmark, Target, Verbosity,
-    abstract_methods, abstract_subtypes, all_names, callable_objects, debug, generate,
-    method_types, review, union_all_caches, union_types, warn, imported_names,
+    abstract_methods, abstract_subtypes, all_names, callable_objects, imported_names,
+    instance_types, method_types, tuple_types, type_caches, union_all_types, union_types,
+    debug, review, warn,
     install_speculate_mode, speculate
 
 (@ccall jl_generating_output()::Cint) == 1 &&

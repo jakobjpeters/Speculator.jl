@@ -13,9 +13,10 @@ struct Parameters
     dry::Bool
     file::IOStream
     generate::Bool
-    ignore::IdSet{Any}
+    ignored::IdSet{Any}
     maximum_methods::Int
     product_cache::IdDict{Type, Vector{Type}}
+    searched::IdSet{Any}
     subtype_cache::IdDict{DataType, Vector{Type}}
     target::Target
     verbosity::Verbosity
@@ -66,95 +67,6 @@ function log_repl((@nospecialize f), parameters)
     end
 end
 
-function precompile_concrete((@nospecialize x), parameters, specializations, (@nospecialize types))
-    counters = parameters.counters
-
-    if parameters.dry log_debug(found, x, parameters, types)
-    elseif Tuple{Typeof(x), types...} in specializations log_debug(skipped, x, parameters, types)
-    elseif precompile(x, types)
-        log_debug(precompiled, x, parameters, types)
-
-        if parameters.generate
-            file = parameters.file
-
-            print(file, "precompile(")
-            show(file, x)
-            println(file, ", ", types, ')')
-        end
-    elseif warn ⊆ parameters.verbosity
-        _signature = signature(x, types)
-        counters[warned] += 1
-
-        log_repl(() -> (
-            @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-        ), parameters)
-    end
-end
-
-precompile_methods((@nospecialize x), parameters) =
-    for method in methods(x)
-        precompile_method(x, parameters, method, method.sig)
-    end
-
-precompile_method((@nospecialize x), parameters, method, sig::DataType) =
-    if !(Tuple <: sig)
-        parameter_types = sig.types[(begin + 1):end]
-        _specializations = map(x -> x.specTypes, specializations(method))
-        target = parameters.target
-
-        if abstract_methods ⊆ target
-            if !any(isvarargtype, parameter_types)
-                no_specialize = method.nospecialize
-
-                product_types = map(eachindex(parameter_types)) do i
-                    parameter_type = parameter_types[i]
-                    branches = Type[parameter_type]
-
-                    if is_subset(1, no_specialize >> (i - 1)) branches
-                    else
-                        get!(parameters.product_cache, parameter_type) do
-                            leaves = Type[]
-
-                            while !isempty(branches)
-                                branch = pop!(branches)
-
-                                if isconcretetype(branch)
-                                    any(type -> type <: branch, [DataType, UnionAll, Union]) ||
-                                        push!(leaves, branch)
-                                else append!(branches, subtypes!(branch, parameters))
-                                end
-                            end
-
-                            leaves
-                        end
-                    end
-                end
-
-                isempty(product_types) || begin
-                    count = 1
-
-                    for product_type in product_types
-                        count, overflow = mul_with_overflow(count, length(product_type))
-                        overflow && return false
-                    end
-
-                    count ≤ parameters.maximum_methods
-                end && for concrete_types in product(product_types...)
-                    precompile_concrete(x, parameters, _specializations, concrete_types)
-                end
-            end
-        elseif all(isconcretetype, parameter_types)
-            precompile_concrete(x, parameters, _specializations, (parameter_types...,))
-        end
-
-        if method_types ⊆ target
-            for parameter_type in parameter_types
-                check_ignore!(parameter_type, parameters)
-            end
-        end
-    end
-precompile_method((@nospecialize x), parameters, nospecialize, sig::UnionAll) = nothing
-
 function round_time(x)
     whole, fraction = split(string(max(0.0, round(x; digits = 4))), '.')
     whole * '.' * rpad(fraction, 4, '0')
@@ -188,7 +100,7 @@ subtypes!(x::DataType, parameters) =
     else []
     end
 subtypes!(x::UnionAll, parameters) =
-    union_all_caches ⊆ parameters.target ? union_all_cache!([], x, parameters) : []
+    union_all_types ⊆ parameters.target ? union_all_cache!([], x, parameters) : []
 subtypes!(x::Union, parameters) = union_types ⊆ parameters.target ? uniontypes(x) : []
 
 union_all_cache!(types, x::DataType, _) =

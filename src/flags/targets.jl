@@ -1,7 +1,7 @@
 
 @flag(Target,
-    abstract_methods, abstract_subtypes, all_names, callable_objects,
-    imported_names, method_types, union_all_caches, union_types
+    abstract_methods, abstract_subtypes, all_names, callable_objects, imported_names,
+    instance_types, method_types, tuple_types, type_caches, union_all_types, union_types
 )
 
 @doc """
@@ -10,8 +10,9 @@
 A flag that specifies what methods to precompile within [`speculate`](@ref).
 
 The base flags are [`abstract_methods`](@ref), [`abstract_subtypes`](@ref),
-[`all_names`](@ref), [`callable_objects`](@ref), [`imported_names`](@ref),
-[`methods_types`](@ref), [`union_all_caches`], and [`union_types`](@ref).
+[`all_names`](@ref), [`callable_objects`](@ref), [`instance_types`](@ref),
+[`imported_names`](@ref), [`methods_types`](@ref), [`tuple_types`](@ref),
+[`type_caches`], [`union_all_types`](@ref), and [`union_types`](@ref).
 
 !!! warning
     Some combinations may result in an exponentially larger precompilation workload.
@@ -48,7 +49,7 @@ A flag of [`Target`](@ref) which specifies that [`speculate`](@ref) will use
 the cartesian product of concrete types of each method parameter in the precompilation workload.
 
 Requires at least one of [`abstract_subtypes`](@ref), [`any_subtypes`](@ref),
-[`function_subtypes`](@ref), [`union_all_caches`](@ref), or [`union_types`](@ref).
+[`function_subtypes`](@ref), [`type_caches`](@ref), or [`union_types`](@ref).
 
 # Examples
 
@@ -115,6 +116,20 @@ imported_names::Target
 """ imported_names
 
 @doc """
+    instance_types
+
+A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
+will use the instance of each `DataType` in the precompilation workload.
+
+# Examples
+
+```jldoctest
+julia> instance_types
+instance_types::Target
+```
+""" instance_types
+
+@doc """
     method_types
 
 A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
@@ -129,18 +144,46 @@ method_types::Target
 """ method_types
 
 @doc """
-    union_all_caches
+    tuple_types
 
 A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
-will use a cache of previously instantiated `UnionAll` types in the precompilation workload.
+will ... .
 
 # Examples
 
 ```jldoctest
-julia> union_all_caches
-union_all_caches::Target
+julia> type_caches
+type_caches::Target
 ```
-""" union_all_caches
+""" tuple_types
+
+@doc """
+    type_caches
+
+A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
+will use a cache of previously instantiated types in the precompilation workload.
+
+# Examples
+
+```jldoctest
+julia> type_caches
+type_caches::Target
+```
+""" type_caches
+
+@doc """
+    union_types
+
+A flag of [`Target`](@ref) which specifies that [`speculate`](@ref)
+will unwrap and use each `UnionAll` in the precompilation workload.
+
+# Examples
+
+```jldoctest
+julia> union_types
+union_types::Target
+```
+""" union_all_types
 
 @doc """
     union_types
