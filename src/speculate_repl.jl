@@ -29,7 +29,7 @@ julia> speculate_repl(;
            target = all_names,
            verbosity = debug
        )
-[ Info: The REPL will call `speculate` on each input
+[ Info: The REPL will call `speculate` with each input
 
 julia> module Example
            export g
@@ -44,7 +44,7 @@ julia> speculate_repl(;
            target = abstract_methods | union_types,
            verbosity = debug
        )
-[ Info: The REPL will call `speculate` on each input
+[ Info: The REPL will call `speculate` with each input
 
 julia> Example
 Main.Example
@@ -52,7 +52,7 @@ Main.Example
 [ Info: Precompiled `Main.Example.g(::String)`
 
 julia> speculate_repl(false)
-[ Info: The REPL will not call `speculate` on each input
+[ Info: The REPL will not call `speculate` with each input
 
 julia> Example
 Main.Example
@@ -68,5 +68,5 @@ speculate_repl(install = true; background = true, parameters...) = if isinteract
     else " not"
     end
 
-    @info "The REPL will$s call `speculate` on each input"
+    @info "The REPL will$s call `speculate` with each input"
 end

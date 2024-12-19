@@ -1,12 +1,16 @@
 
 module Speculator
 
-# BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
-# TODO: `methodswith`, `isexported`, `ispublic`, `strict`, `supertypes` targets
-# TODO: tutorial to create a system image?
-# TODO: seperate internal internal and external ignore
-# TODO: document skipping methods that are already specialized
-# TODO: improve the `review` log
+#=
+BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
+TODO: `methodswith`, `isexported`, `ispublic`, `strict`, `supertypes`, and `backedges` targets
+TODO: tutorial to create a system image?
+TODO: seperate internal internal and external ignore
+TODO: document skipping methods that are already specialized
+TODO: improve the `review` log
+TODO: document time to search for every possible method:
+    `speculate(; target = all_names | instance_types, verbosity = review)`
+=#
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, mul_with_overflow, show
 using Base:

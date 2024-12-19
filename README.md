@@ -26,18 +26,18 @@ is roughly equivalent to
 julia> using Pkg: add
 
 julia> add(; url = "https://github.com/jakobjpeters/Speculator.jl")
+
+julia> using Speculator
 ```
 
 ### Showcase
 
 ```julia-repl
-julia> using Speculator
-
 julia> speculate_repl(;
            target = all_names,
            verbosity = debug
        )
-[ Info: The REPL will call `speculate` on each input
+[ Info: The REPL will call `speculate` with each input
 
 julia> module Showcase
            export g
