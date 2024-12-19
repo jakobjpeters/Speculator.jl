@@ -1,5 +1,5 @@
 
-function ___speculate((@nospecialize x), parameters)
+function log_review((@nospecialize x), parameters)
     elapsed = @elapsed check_ignore!(x, parameters)
 
     if review ⊆ parameters.verbosity
@@ -21,9 +21,9 @@ function ___speculate((@nospecialize x), parameters)
     end
 end
 
-__speculate((@nospecialize x::Some), parameters) = ___speculate(something(x), parameters)
-__speculate(::Nothing, parameters) = for _module in loaded_modules_array()
-    ___speculate(_module, parameters)
+handle_input((@nospecialize x::Some), parameters) = log_review(something(x), parameters)
+handle_input(::Nothing, parameters) = for _module in loaded_modules_array()
+    log_review(_module, parameters)
 end
 
 function _speculate(x;
@@ -51,7 +51,7 @@ function _speculate(x;
             Speculator.target(target),
             Speculator.verbosity(verbosity),
         )
-        background ? (@spawn __speculate(x, parameters); nothing) : __speculate(x, parameters)
+        background ? (@spawn handle_input(x, parameters); nothing) : handle_input(x, parameters)
     end
 end
 
