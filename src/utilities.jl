@@ -118,9 +118,9 @@ precompile_method((@nospecialize x), parameters, method, sig::DataType) =
                             while !isempty(branches)
                                 branch = pop!(branches)
 
-                                if isconcretetype(branch) &&
-                                    !any(type -> type <: branch, [DataType, UnionAll, Union])
-                                    push!(leaves, branch)
+                                if isconcretetype(branch)
+                                    any(type -> type <: branch, [DataType, UnionAll, Union]) ||
+                                        push!(leaves, branch)
                                 else append!(branches, subtypes!(branch, parameters))
                                 end
                             end
