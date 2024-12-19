@@ -119,7 +119,7 @@ search((@nospecialize x), _) = nothing
 function check_searched((@nospecialize x), parameters)
     searched = parameters.searched
 
-    if !(x in searched || x in parameters.ignored)
+    if !(x in searched)
         _methods = methods(x)
         push!(searched, x)
 
