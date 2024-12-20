@@ -3,13 +3,27 @@ module Speculator
 
 #=
 BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
-TODO: `methodswith`, `isexported`, `ispublic`, `strict`, `supertypes`, and `backedges` targets
 TODO: tutorial to create a system image?
 TODO: seperate internal internal and external ignore
 TODO: document skipping methods that are already specialized
 TODO: improve the `review` log
 TODO: document time to search for every possible method:
     `speculate(; target = all_names | instance_types, verbosity = review)`
+TODO: `predicate = Returns(true)` instead of `Target`
+    - called as `predicate(::Module, ::Any)`
+    - document useful predicates:
+        - types and values
+        - `ispublic(::Module, ::Any)`
+        - `isconcretetype`
+        - `isexported(::Module, ::Any)`
+    - the module the value was found in is passed to the predicate
+    - delete `ignored`
+    - test and document that `predicate = x -> !(x isa Method)` does nothing
+    - direct input is searched by default because there isn't a module to pass to the predicate
+    - automatically make `@nospecialize`?
+        - foreach(method -> (method.nospecialize |= 2), methods(predicate))
+    - only search things that increase the maximum number of found methods?
+    - `verbosity = silent::Verbosity`
 =#
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, show
@@ -34,8 +48,8 @@ export SpeculationBenchmark, Target, Verbosity,
     debug, review, warn,
     speculate_repl, speculate
 
-(@ccall jl_generating_output()::Cint) == 1 &&
-    speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],
-        target = abstract_methods | abstract_subtypes | all_names | union_types)
+# (@ccall jl_generating_output()::Cint) == 1 &&
+#     speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],
+#         target = abstract_methods | abstract_subtypes | all_names | union_types)
 
 end # Speculator

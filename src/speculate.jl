@@ -24,109 +24,72 @@ function precompile_method((@nospecialize x), parameters, specializations, (@nos
     end
 end
 
-function precompile_methods((@nospecialize x), parameters, method, sig::DataType)
-    parameter_types = sig.types[(begin + 1):end]
-    _specializations = map(x -> x.specTypes, specializations(method))
-    target = parameters.target
+precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
+    if !(method.module == Core && Tuple <: sig)
+        parameter_types = sig.types[(begin + 1):end]
+        _specializations = map(x -> x.specTypes, specializations(method))
+        target = parameters.target
 
-    if abstract_methods ⊆ target
-        if !any(isvarargtype, parameter_types)
-            no_specialize = method.nospecialize
+        if abstract_methods ⊆ target
+            if !any(isvarargtype, parameter_types)
+                no_specialize = method.nospecialize
 
-            product_types = map(eachindex(parameter_types)) do i
-                parameter_type = parameter_types[i]
-                branches = Type[parameter_type]
+                product_types = map(eachindex(parameter_types)) do i
+                    parameter_type = parameter_types[i]
+                    branches = Type[parameter_type]
 
-                if is_subset(1, no_specialize >> (i - 1)) branches
-                else
-                    get!(parameters.product_cache, parameter_type) do
-                        leaves = Type[]
+                    if is_subset(1, no_specialize >> (i - 1)) branches
+                    else
+                        get!(parameters.product_cache, parameter_type) do
+                            leaves = Type[]
 
-                        while !isempty(branches)
-                            branch = pop!(branches)
+                            while !isempty(branches)
+                                branch = pop!(branches)
 
-                            if isconcretetype(branch)
-                                any(type -> type <: branch, [DataType, UnionAll, Union]) ||
-                                    push!(leaves, branch)
-                            else append!(branches, subtypes!(branch, parameters))
+                                if isconcretetype(branch)
+                                    any(type -> type <: branch, [DataType, UnionAll, Union]) ||
+                                        push!(leaves, branch)
+                                else append!(branches, subtypes!(branch, parameters))
+                                end
                             end
-                        end
 
-                        leaves
+                            leaves
+                        end
                     end
                 end
-            end
 
-            isempty(product_types) || begin
-                count = 1
+                isempty(product_types) || begin
+                    count = 1
 
-                for product_type in product_types
-                    count, overflow = mul_with_overflow(count, length(product_type))
-                    overflow && return false
+                    for product_type in product_types
+                        count, overflow = mul_with_overflow(count, length(product_type))
+                        overflow && return false
+                    end
+
+                    count ≤ parameters.maximum_methods
+                end && for concrete_types in product(product_types...)
+                    precompile_method(x, parameters, _specializations, concrete_types)
                 end
-
-                count ≤ parameters.maximum_methods
-            end && for concrete_types in product(product_types...)
-                precompile_method(x, parameters, _specializations, concrete_types)
             end
+        elseif all(isconcretetype, parameter_types)
+            precompile_method(x, parameters, _specializations, (parameter_types...,))
         end
-    elseif all(isconcretetype, parameter_types)
-        precompile_method(x, parameters, _specializations, (parameter_types...,))
     end
-end
 precompile_methods((@nospecialize x), _, _, _::UnionAll) = nothing
 
-function search(x::DataType, parameters)
-    target = parameters.target
-
-    abstract_subtypes ⊆ target && for subtype in subtypes(x)
-        x <: subtype || check_searched(subtype, parameters)
-    end
-    type_caches ⊆ target && for type in x.name.cache
-        isnothing(type) || check_searched(type, parameters)
-    end
-    instance_types ⊆ target && isdefined(x, :instance) &&
-        check_searched(x.instance, parameters)
-
-    if tuple_types ⊆ target && isdefined(x, :types)
-        for type in x.types
-            check_searched(type, parameters)
-        end
-    end
+search(x::Module, parameters) = for name in names(x; all = true)
+    isdefined(x, name) && check_searched(getproperty(x, name), parameters)
 end
-search(x::MethodList, parameters) = for method in x
-    check_searched(method, parameters)
-end
-search(x::Method, parameters) =
-    if method_types ⊆ parameters.target check_searched(x.sig, parameters) end
-function search(x::Module, parameters)
-    target = parameters.target
-
-    for name in names(x; all = all_names ⊆ target, imported = imported_names ⊆ target)
-        isdefined(x, name) && check_searched(getfield(x, name), parameters)
-    end
-end
-search(x::UnionAll, parameters) =
-    if union_all_types ⊆ parameters.target check_searched(unwrap_unionall(x), parameters) end
-search(x::Union, parameters) = if union_types ⊆ parameters.target
-    for union_type in uniontypes(x)
-        check_searched(union_type, parameters)
-    end
-end
-search((@nospecialize x), _) = nothing
+search((@nospecialize x), parameters) = nothing
 
 function check_searched((@nospecialize x), parameters)
     searched = parameters.searched
 
-    if !(x in searched)
-        _methods = methods(x)
+    if !(x ∈ searched)
         push!(searched, x)
-
-        search(typeof(x), parameters)
         search(x, parameters)
-        search(_methods, parameters)
 
-        for method in _methods
+        for method in methods(x)
             precompile_methods(x, parameters, method, method.sig)
         end
     end

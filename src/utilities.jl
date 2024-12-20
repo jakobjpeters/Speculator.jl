@@ -32,14 +32,6 @@ end
 
 is_subset(f, _f) = f == (f & _f)
 
-check_ignore!((@nospecialize x::Union{DataType, Function, Module, UnionAll, Union}), parameters) =
-    ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), x, parameters)
-function check_ignore!((@nospecialize x::T), parameters) where T
-    callable_objects ⊆ parameters.target && ignore!(
-        ((@nospecialize _x), _parameters) -> precompile_methods(_x, _parameters), x, parameters)
-    ignore!(((@nospecialize _x), _parameters) -> speculate_ignored(_x, _parameters), T, parameters)
-end
-
 function log_debug(counter, (@nospecialize x), parameters, (@nospecialize types))
     parameters.counters[counter] += 1
 
@@ -78,21 +70,6 @@ function signature(x, types)
 end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
-
-speculate_ignored((@nospecialize x::Function), parameters) = precompile_methods(x, parameters)
-function speculate_ignored(x::Module, parameters)
-    target = parameters.target
-    for name in names(x; all = all_names ⊆ target, imported = imported_names ⊆ target)
-        isdefined(x, name) && check_ignore!(getfield(x, name), parameters)
-    end
-end
-function speculate_ignored(x::Union{DataType, UnionAll, Union}, parameters)
-    precompile_methods(x, parameters)
-
-    for type in subtypes!(x, parameters)
-        check_ignore!(type, parameters)
-    end
-end
 
 subtypes!(x::DataType, parameters) =
     if abstract_subtypes ⊆ parameters.target

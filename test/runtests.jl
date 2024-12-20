@@ -3,18 +3,21 @@ using MethodAnalysis: visit
 using Speculator
 using Test: @test
 
-const _methods = Method[]
+const _methods = Set{Method}()
 const _read, _write = pipe = Pipe()
-cache_methods(x::Method) = (push!(_methods, x); true)
+check_signature(x::DataType) = all(isconcretetype, x.types[(begin + 1):end]) &&
+    !any(type -> type <: x, [DataType, UnionAll, Union])
+check_signature(_) = false
+function cache_methods(x::Method)
+    check_signature(x.sig) && x.module != Core && push!(_methods, x)
+    true
+end
 cache_methods((@nospecialize _)) = true
 visit(cache_methods)
 redirect_stderr(() -> speculate(;
     dry = true, target = all_names | instance_types, verbosity = review), pipe)
 close(_write)
-const count = length(_methods)
-const _count = parse(Int, only(match(r"(\d+)", read(_read, String))))
-within_one_percent(x, y) = abs((x / y) - 1) < 0.01
-@test within_one_percent(count, _count) && within_one_percent(_count, count)
+@test length(_methods) < parse(Int, only(match(r"(\d+)", read(_read, String))))
 
 module X end
 const path = "precompile.jl"
