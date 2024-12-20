@@ -1,7 +1,7 @@
 
 const default_ignore = []
 
-const default_maximum_methods = 2 ^ 8
+const default_maximum_methods = 1
 
 const default_target = nothing
 
@@ -15,19 +15,12 @@ struct Parameters
     generate::Bool
     ignored::IdSet{Any}
     maximum_methods::Int
-    product_cache::IdDict{Type, Vector{Type}}
+    product_cache::IdDict{Type, Pair{Vector{Type}, Bool}}
     searched::IdSet{Any}
-    subtype_cache::IdDict{DataType, Vector{Type}}
+    subtype_cache::IdDict{DataType, Vector{Any}}
     target::Target
+    union_type_cache::IdDict{Union, Vector{Any}}
     verbosity::Verbosity
-end
-
-function ignore!(f, (@nospecialize x), parameters)
-    ignore = parameters.ignore
-    if !(x in ignore)
-        push!(ignore, x)
-        f(x, parameters)
-    end
 end
 
 is_subset(f, _f) = f == (f & _f)
@@ -71,23 +64,12 @@ end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
-subtypes!(x::DataType, parameters) =
+subtypes!(branches, x::DataType, parameters) =
     if abstract_subtypes ⊆ parameters.target
-        get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)), parameters.subtype_cache, x)
-    else []
+        append!(branches, get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)),
+            parameters.subtype_cache, x))
+    else branches
     end
-subtypes!(x::UnionAll, parameters) =
-    union_all_types ⊆ parameters.target ? union_all_cache!([], x, parameters) : []
-subtypes!(x::Union, parameters) = union_types ⊆ parameters.target ? uniontypes(x) : []
-
-union_all_cache!(types, x::DataType, _) =
-    append!(types, Iterators.filter(!isnothing, x.name.cache))
-union_all_cache!(types, x::UnionAll, parameters) =
-    union_all_cache!(types, unwrap_unionall(x), parameters)
-function union_all_cache!(types, x::Union, parameters)
-    for type in subtypes!(x, parameters)
-        union_all_cache!(types, type, parameters)
-    end
-
-    types
-end
+subtypes!(branches, ::UnionAll, _) = branches
+subtypes!(branches, x::Union, parameters) = union_types ⊆ parameters.target ?
+    append!(branches, get!(() -> uniontypes(x), parameters.union_type_cache, x)) : branches

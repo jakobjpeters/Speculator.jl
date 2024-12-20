@@ -1,10 +1,12 @@
 
-precompile_method((@nospecialize x), parameters, specializations, (@nospecialize types)) =
+precompile_method((@nospecialize x), parameters, method, (@nospecialize types)) =
     if parameters.dry log_debug(found, x, parameters, types)
     else
         signature_types = Tuple{Typeof(x), types...}
 
-        if signature_types in specializations log_debug(skipped, x, parameters, types)
+        if any(specialization -> specialization.specTypes == signature_types,
+            specializations(method))
+            log_debug(skipped, x, parameters, types)
         elseif precompile(signature_types)
             log_debug(precompiled, x, parameters, types)
             parameters.generate && println(parameters.file, "precompile(", signature_types, ')')
@@ -19,49 +21,53 @@ precompile_method((@nospecialize x), parameters, specializations, (@nospecialize
     end
 precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
     if !(method.module == Core && Tuple <: sig)
-        parameter_types = sig.types[(begin + 1):end]
-        _specializations = map(x -> x.specTypes, specializations(method))
-        target = parameters.target
+        parameter_types = sig.types[2:end]
 
-        if abstract_methods ⊆ target
-            if !any(isvarargtype, parameter_types)
-                no_specialize = method.nospecialize
+        if isempty(parameter_types) || !isvarargtype(last(parameter_types))
+            count = 1
+            flag = false
+            maximum_methods = parameters.maximum_methods
+            no_specialize = method.nospecialize
+            product_cache = parameters.product_cache
+            product_types = Vector{Type}[]
 
-                product_types = map(eachindex(parameter_types)) do i
-                    parameter_type = parameter_types[i]
-                    branches = Type[parameter_type]
+            for i in eachindex(parameter_types)
+                parameter_type = parameter_types[i]
 
-                    if is_subset(1, no_specialize >> (i - 1)) branches
+                push!(product_types,
+                    if is_subset(1, no_specialize >> (i - 1)) Type[parameter_type]
                     else
-                        get!(parameters.product_cache, parameter_type) do
-                            leaves = Type[]
+                        leaves, flag = get!(product_cache, parameter_type) do
+                            branches = Type[parameter_type]
+                            new_flag = false
+                            new_leaves = Type[]
 
                             while !isempty(branches)
                                 branch = pop!(branches)
-                                isconcretetype(branch) ? push!(leaves, branch) :
-                                    append!(branches, subtypes!(branch, parameters))
+
+                                if isconcretetype(branch)
+                                    push!(new_leaves, branch)
+                                    (new_flag = new_flag || length(new_leaves) > maximum_methods) && break
+                                else subtypes!(branches, branch, parameters)
+                                end
                             end
 
-                            leaves
+                            new_leaves => new_flag
                         end
+
+                        flag || begin
+                            flag = isempty(leaves) || begin
+                                count, overflow = mul_with_overflow(count, length(leaves))
+                                flag = overflow || count > maximum_methods
+                            end
+                        end ? break : leaves
                     end
-                end
-
-                isempty(product_types) || begin
-                    count = 1
-
-                    for product_type in product_types
-                        count, overflow = mul_with_overflow(count, length(product_type))
-                        overflow && return false
-                    end
-
-                    count ≤ parameters.maximum_methods
-                end && for concrete_types in product(product_types...)
-                    precompile_method(x, parameters, _specializations, concrete_types)
-                end
+                )
             end
-        elseif all(isconcretetype, parameter_types)
-            precompile_method(x, parameters, _specializations, (parameter_types...,))
+
+            flag || for concrete_types in product(product_types...)
+                precompile_method(x, parameters, method, concrete_types)
+            end
         end
     end
 precompile_methods((@nospecialize x), _, _, ::UnionAll) = nothing
@@ -120,6 +126,7 @@ function initialize_parameters(x;
     verbosity::Union{Verbosity, Nothing} = warn
 )
     @nospecialize
+    maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
     generate = !(dry || isempty(path))
     open(generate ? path : tempname(); write = true) do file
         ignored = IdSet{Any}(ignore)
@@ -133,8 +140,9 @@ function initialize_parameters(x;
             maximum_methods,
             IdDict{Type, Vector{Type}}(),
             copy(ignored),
-            IdDict{DataType, Vector{Type}}(),
+            IdDict{DataType, Vector{Any}}(),
             Speculator.target(target),
+            IdDict{Union, Vector{Any}}(),
             Speculator.verbosity(verbosity),
         )
         background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
@@ -171,10 +179,14 @@ which may be useful if there are new methods to precompile.
     This is useful for testing workloads and in [`time_precompilation`](@ref).
 - `ignore = $default_ignore`: An iterable of values that will not be speculated.
 - `maximum_methods::Integer = $default_maximum_methods`:
-    Ignores a method with an abstract type signature if `abstract_methods` is a
-    subset of `target` and the number of concrete methods is greater than this value.
+    Specifies the maximum number of concrete methods that are generated from a method signature.
+    Values less than `1` will throw an error.
+    A value equal to `1` will only use methods where
+    each parameter type is either concrete or not specialized.
+    Values greater than `1` will generated concrete methods from
+    the Cartesian product of the subtypes of each parameter type.
     This prevents spending too much time precompiling a single generic method,
-    but is slower than manually including that function in `ignore`.
+    but is slower than manually including offending functions and types in `ignore`.
 - `path::String = ""`:
     Writes each successful precompilation directive to a file
     if the `path` is not empty and it is not a `dry` run.

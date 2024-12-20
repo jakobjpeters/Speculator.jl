@@ -7,6 +7,9 @@ TODO: tutorial to create a system image?
 TODO: seperate internal internal and external ignore
 TODO: document skipping methods that are already specialized
 TODO: improve the `review` log
+TODO: benchmark with `PrecompileSignatures.jl`:
+    - `speculate(; dry = true)`
+    - `length(PrecompileSignatures.precompilables(Base.loaded_modules_array()))`
 TODO: document time to search for every possible method:
     `speculate(; target = all_names | abstract_methods, verbosity = review)`
 TODO: `predicate = Returns(true)` instead of `Target`
@@ -31,7 +34,8 @@ TODO: does `f(@nospecialize _)` work?
 
 import Base: eltype, firstindex, getindex, iterate, lastindex, length, show
 using Base:
-    MethodList, RefValue, Threads.@spawn, active_project, isvarargtype, loaded_modules_array,
+    MethodList, RefValue, Threads.@spawn,
+    active_project, add_with_overflow, isvarargtype, loaded_modules_array,
     mul_with_overflow, Iterators.product, specializations, uniontypes, unwrap_unionall
 using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
