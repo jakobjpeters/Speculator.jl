@@ -1,26 +1,22 @@
 
 precompile_method((@nospecialize x), parameters, specializations, (@nospecialize types)) =
     if parameters.dry log_debug(found, x, parameters, types)
-    elseif Tuple{Typeof(x), types...} in specializations log_debug(skipped, x, parameters, types)
-    elseif precompile(x, types)
-        log_debug(precompiled, x, parameters, types)
+    else
+        signature_types = Tuple{Typeof(x), types...}
 
-        if parameters.generate
-            file = parameters.file
+        if signature_types in specializations log_debug(skipped, x, parameters, types)
+        elseif precompile(signature_types)
+            log_debug(precompiled, x, parameters, types)
+            parameters.generate && println(parameters.file, "precompile(", signature_types, ')')
+        elseif warn ⊆ parameters.verbosity
+            _signature = signature(x, types)
+            parameters.counters[warned] += 1
 
-            print(file, "precompile(")
-            show(file, x)
-            println(file, ", ", types, ')')
+            log_repl(() -> (
+                @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
+            ), parameters)
         end
-    elseif warn ⊆ parameters.verbosity
-        _signature = signature(x, types)
-        parameters.counters[warned] += 1
-
-        log_repl(() -> (
-            @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-        ), parameters)
     end
-
 precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
     if !(method.module == Core && Tuple <: sig)
         parameter_types = sig.types[(begin + 1):end]
@@ -42,12 +38,8 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
 
                             while !isempty(branches)
                                 branch = pop!(branches)
-
-                                if isconcretetype(branch)
-                                    any(type -> type <: branch, [DataType, UnionAll, Union]) ||
-                                        push!(leaves, branch)
-                                else append!(branches, subtypes!(branch, parameters))
-                                end
+                                isconcretetype(branch) ? push!(leaves, branch) :
+                                    append!(branches, subtypes!(branch, parameters))
                             end
 
                             leaves

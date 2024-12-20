@@ -24,8 +24,7 @@ load_data(path) =
 const data_path, time_path = ARGS
 const x, ignore, maximum_methods, target = load_data(data_path)
 
-trial(dry) = @elapsed speculate(x;
-    dry, ignore, maximum_methods, target, background = false, verbosity = nothing)
+trial(dry) = @elapsed speculate(x; dry, ignore, maximum_methods, target, verbosity = nothing)
 
 trial(true)
 write(time_path, trial(false) - trial(false))

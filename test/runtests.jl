@@ -5,8 +5,7 @@ using Test: @test
 
 const _methods = Set{Method}()
 const _read, _write = pipe = Pipe()
-check_signature(x::DataType) = all(isconcretetype, x.types[(begin + 1):end]) &&
-    !any(type -> type <: x, [DataType, UnionAll, Union])
+check_signature(x::DataType) = all(isconcretetype, x.types[(begin + 1):end])
 check_signature(_) = false
 function cache_methods(x::Method)
     check_signature(x.sig) && x.module != Core && push!(_methods, x)
