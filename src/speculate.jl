@@ -1,7 +1,5 @@
 
-function precompile_method((@nospecialize x), parameters, specializations, (@nospecialize types))
-    counters = parameters.counters
-
+precompile_method((@nospecialize x), parameters, specializations, (@nospecialize types)) =
     if parameters.dry log_debug(found, x, parameters, types)
     elseif Tuple{Typeof(x), types...} in specializations log_debug(skipped, x, parameters, types)
     elseif precompile(x, types)
@@ -16,13 +14,12 @@ function precompile_method((@nospecialize x), parameters, specializations, (@nos
         end
     elseif warn ⊆ parameters.verbosity
         _signature = signature(x, types)
-        counters[warned] += 1
+        parameters.counters[warned] += 1
 
         log_repl(() -> (
             @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
         ), parameters)
     end
-end
 
 precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
     if !(method.module == Core && Tuple <: sig)
@@ -75,12 +72,12 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
             precompile_method(x, parameters, _specializations, (parameter_types...,))
         end
     end
-precompile_methods((@nospecialize x), _, _, _::UnionAll) = nothing
+precompile_methods((@nospecialize x), _, _, ::UnionAll) = nothing
 
 search(x::Module, parameters) = for name in names(x; all = true)
     isdefined(x, name) && check_searched(getproperty(x, name), parameters)
 end
-search((@nospecialize x), parameters) = nothing
+search((@nospecialize x), _) = nothing
 
 function check_searched((@nospecialize x), parameters)
     searched = parameters.searched
@@ -104,13 +101,12 @@ function log_review((@nospecialize x), parameters)
     elapsed = @elapsed handle_input(x, parameters)
 
     if review ⊆ parameters.verbosity
-        counters = parameters.counters
-        dry = parameters.dry
-
         log_repl(parameters) do
-            values = length(parameters.searched)
+            counters = parameters.counters
+            dry = parameters.dry
             seconds = round_time(elapsed)
-            s = " methods from `$values` values in `$seconds` seconds"
+            values = length(parameters.searched)
+            s = " methods from `$values` value$(values == 1 ? "" : "s") in `$seconds` seconds"
 
             if dry @info "Found `$(counters[found])`$s"
             else

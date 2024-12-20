@@ -48,8 +48,8 @@ export SpeculationBenchmark, Target, Verbosity,
     debug, review, warn,
     speculate_repl, speculate
 
-# (@ccall jl_generating_output()::Cint) == 1 &&
-#     speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],
-#         target = abstract_methods | abstract_subtypes | all_names | union_types)
+(@ccall jl_generating_output()::Cint) == 1 &&
+    speculate(Speculator; ignore = [default_ignore, default_maximum_methods, default_target],
+        target = abstract_methods | abstract_subtypes | all_names | union_types)
 
 end # Speculator
