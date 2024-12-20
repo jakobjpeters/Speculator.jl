@@ -3,6 +3,7 @@ module Speculator
 
 #=
 BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
+TODO: plot number of methods vs `maximum_methods`
 TODO: tutorial to create a system image?
 TODO: seperate internal internal and external ignore
 TODO: document skipping methods that are already specialized

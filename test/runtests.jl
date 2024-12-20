@@ -1,10 +1,18 @@
 
+using Base: loaded_modules_array
 using MethodAnalysis: visit
+using PrecompileSignatures: precompilable
 using Speculator
 using Test: @test
 
+function count_methods(; parameters...)
+    _read, _write = pipe = Pipe()
+    redirect_stderr(() -> speculate(; dry = true, verbosity = review, parameters...), pipe)
+    close(_write)
+    parse(Int, only(match(r"(\d+)", read(_read, String))))
+end
+
 const _methods = Set{Method}()
-const _read, _write = pipe = Pipe()
 check_signature(x::DataType) = all(isconcretetype, x.types[(begin + 1):end])
 check_signature(_) = false
 function cache_methods(x::Method)
@@ -13,10 +21,10 @@ function cache_methods(x::Method)
 end
 cache_methods((@nospecialize _)) = true
 visit(cache_methods)
-redirect_stderr(() -> speculate(;
-    dry = true, target = all_names | instance_types, verbosity = review), pipe)
 close(_write)
-@test length(_methods) < parse(Int, only(match(r"(\d+)", read(_read, String))))
+count = count_methods()
+@test length(_methods) < count
+@test length(precompilables(loaded_modules_array())) < count
 
 module X end
 const path = "precompile.jl"
@@ -31,3 +39,5 @@ speculate(X; path)
 const path = tempname()
 speculate(; path)
 @test (include(path); true)
+
+@test issorted(map(maximum_methods -> count_methods(; maximum_methods), 1:10))
