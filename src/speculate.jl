@@ -1,12 +1,10 @@
 
-precompile_method((@nospecialize x), parameters, method, (@nospecialize types)) =
+precompile_method((@nospecialize x), parameters, _specializations, (@nospecialize types)) =
     if parameters.dry log_debug(found, x, parameters, types)
     else
         signature_types = Tuple{Typeof(x), types...}
 
-        if any(specialization -> specialization.specTypes == signature_types,
-            specializations(method))
-            log_debug(skipped, x, parameters, types)
+        if any(==(signature_types), _specializations) log_debug(skipped, x, parameters, types)
         elseif precompile(signature_types)
             log_debug(precompiled, x, parameters, types)
             parameters.generate && println(parameters.file, "precompile(", signature_types, ')')
@@ -66,8 +64,13 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
                 )
             end
 
-            flag || for concrete_types in product(product_types...)
-                precompile_method(x, parameters, method, concrete_types)
+            if !flag
+                _specializations =
+                    map(specialization -> specialization.specTypes, specializations(method))
+
+                for concrete_types in product(product_types...)
+                    precompile_method(x, parameters, _specializations, concrete_types)
+                end
             end
         end
     end
