@@ -35,7 +35,7 @@ struct Verbosity
 
     global verbosity(x) = new(x)
 
-    Base.:|(v::Verbosity, _v::Verbosity) = new(v.value, _v.value)
+    Base.:|(v::Verbosity, _v::Verbosity) = new(v.value | _v.value)
 end
 
 """
@@ -98,7 +98,7 @@ warn::Verbosity
 """
 const warn = verbosity(4)
 
-issubset(v::Verbosity, _v::Verbosity) = issubset(v.value, _v.value)
+issubset(v::Verbosity, _v::Verbosity) = is_subset(v.value, _v.value)
 
 show(io::IO, v::Verbosity) =
     if v == silent print(io, "silent")
