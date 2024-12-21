@@ -90,8 +90,8 @@ function check_searched((@nospecialize x), parameters)
     end
 end
 
-handle_input((@nospecialize x::Some), parameters) = check_searched(something(x), parameters)
-handle_input(::Nothing, parameters) = for _module in loaded_modules_array()
+handle_input((@nospecialize x), parameters) = check_searched(something(x), parameters)
+handle_input(::AllModules, parameters) = for _module in loaded_modules_array()
     check_searched(_module, parameters)
 end
 
@@ -116,58 +116,15 @@ function log_review((@nospecialize x), parameters)
     end
 end
 
-function initialize_parameters(x;
-    background::Bool = false,
-    dry::Bool = false,
-    ignore = default_ignore,
-    maximum_methods::Integer = default_maximum_methods,
-    path::String = "",
-    target::Union{Target, Nothing} = default_target,
-    verbosity::Union{Verbosity, Nothing} = warn
-)
-    @nospecialize
-    maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
-    generate = !(dry || isempty(path))
-    open(generate ? path : tempname(); write = true) do file
-        ignored = IdSet{Any}(ignore)
-        parameters = Parameters(
-            background && isinteractive(),
-            Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
-            dry,
-            file,
-            generate,
-            ignored,
-            maximum_methods,
-            IdDict{Type, Vector{Type}}(),
-            copy(ignored),
-            IdDict{DataType, Vector{Any}}(),
-            Speculator.target(target),
-            IdDict{Union, Vector{Any}}(),
-            Speculator.verbosity(verbosity),
-        )
-        background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
-        nothing
-    end
-end
-
-function speculate(x; parameters...)
-    @nospecialize
-    initialize_parameters(Some(x); parameters...)
-end
-
-function speculate(; parameters...)
-    @nospecialize
-    initialize_parameters(nothing; parameters...)
-end
-
 """
     speculate(::Any; parameters...)
-    speculate(; parameters...)
 
 Generate and `precompile` a workload.
 
 This function can be called repeatedly with the same value,
 which may be useful if there are new methods to precompile.
+
+The [`all_modules`](@ref) value ... .
 
 # Keyword parameters
 
@@ -221,4 +178,36 @@ julia> speculate(Example;
 [ Info: Precompiled `Main.Example.g(::String)`
 ```
 """
-speculate
+function speculate(x;
+    background::Bool = false,
+    dry::Bool = false,
+    ignore = default_ignore,
+    maximum_methods::Integer = default_maximum_methods,
+    path::String = "",
+    target::Union{Target, Nothing} = default_target,
+    verbosity::Union{Verbosity, Nothing} = warn
+)
+    @nospecialize
+    maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
+    generate = !(dry || isempty(path))
+    open(generate ? path : tempname(); write = true) do file
+        ignored = IdSet{Any}(ignore)
+        parameters = Parameters(
+            background && isinteractive(),
+            Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
+            dry,
+            file,
+            generate,
+            ignored,
+            maximum_methods,
+            IdDict{Type, Vector{Type}}(),
+            copy(ignored),
+            IdDict{DataType, Vector{Any}}(),
+            Speculator.target(target),
+            IdDict{Union, Vector{Any}}(),
+            Speculator.verbosity(verbosity),
+        )
+        background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
+        nothing
+    end
+end

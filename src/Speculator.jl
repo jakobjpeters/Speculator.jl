@@ -46,15 +46,16 @@ using REPL: LineEdit.refresh_line
 
 include("flags/flags.jl")
 include("utilities.jl")
+include("all_modules.jl")
 include("speculation_benchmarks.jl")
 include("speculate.jl")
 include("speculate_repl.jl")
 
-export SpeculationBenchmark, Target, Verbosity,
+export AllModules, SpeculationBenchmark, Target, Verbosity,
     abstract_methods, abstract_subtypes, all_names, callable_objects, imported_names,
     instance_types, method_types, tuple_types, type_caches, union_all_types, union_types,
     debug, review, warn,
-    speculate_repl, speculate
+    all_modules, speculate_repl, speculate
 
 (@ccall jl_generating_output()::Cint) == 1 && speculate(Speculator)
 

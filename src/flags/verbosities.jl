@@ -34,7 +34,7 @@ false
 """ Verbosity
 
 @doc """
-    debug
+    debug::Verbosity
 
 A flag of [`Verbosity`](@ref) which specifies that
 [`speculate`](@ref) will show each successful call to `precompile`.
@@ -48,7 +48,7 @@ debug::Verbosity
 """ debug
 
 @doc """
-    review
+    review::Verbosity
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
 will show the total number of values that have been speculated.
@@ -62,7 +62,7 @@ debug::Verbosity
 """ review
 
 @doc """
-    warn
+    warn::Verbosity
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
 will show warnings for failed calls to `precompile`.
