@@ -5,6 +5,7 @@ module Speculator
 BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
 TODO: plot number of methods vs `maximum_methods`
 TODO: tutorial to create a system image?
+TODO: `strict` to only use values defined in current or parent module
 TODO: seperate internal internal and external ignore
 TODO: document skipping methods that are already specialized
 TODO: improve the `review` log
@@ -51,11 +52,9 @@ include("speculation_benchmarks.jl")
 include("speculate.jl")
 include("speculate_repl.jl")
 
-export AllModules, SpeculationBenchmark, Target, Verbosity,
-    abstract_methods, abstract_subtypes, all_names, callable_objects, imported_names,
-    instance_types, method_types, tuple_types, type_caches, union_all_types, union_types,
-    debug, review, warn,
-    all_modules, speculate_repl, speculate
+export
+    AllModules, SpeculationBenchmark, Target, Verbosity,
+    all_modules, debug, review, speculate_repl, speculate, warn
 
 (@ccall jl_generating_output()::Cint) == 1 && speculate(Speculator)
 

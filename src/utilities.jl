@@ -1,24 +1,21 @@
 
-const default_ignore = []
-
 const default_maximum_methods = 1
 
-const default_target = nothing
+const default_predicate = Returns(true)
 
 @enum Counter found skipped precompiled warned
 
-struct Parameters
+struct Parameters{T}
     background::Bool
     counters::Dict{Counter, Int}
     dry::Bool
     file::IOStream
     generate::Bool
-    ignored::IdSet{Any}
     maximum_methods::Int
+    predicate::T
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}}
     searched::IdSet{Any}
     subtype_cache::IdDict{DataType, Vector{Any}}
-    target::Target
     union_type_cache::IdDict{Union, Vector{Any}}
     verbosity::Verbosity
 end
@@ -65,11 +62,11 @@ signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
 subtypes!(branches, x::DataType, parameters) =
-    if abstract_subtypes ⊆ parameters.target
+    if parameters.predicate(x)
         append!(branches, get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)),
             parameters.subtype_cache, x))
     else branches
     end
 subtypes!(branches, ::UnionAll, _) = branches
-subtypes!(branches, x::Union, parameters) = union_types ⊆ parameters.target ?
+subtypes!(branches, x::Union, parameters) = parameters.predicate(x) ?
     append!(branches, get!(() -> uniontypes(x), parameters.union_type_cache, x)) : branches

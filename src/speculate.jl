@@ -47,7 +47,8 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
 
                                 if isconcretetype(branch)
                                     push!(new_leaves, branch)
-                                    (new_flag = new_flag || length(new_leaves) > maximum_methods) && break
+                                    (new_flag =
+                                        new_flag || length(new_leaves) > maximum_methods) && break
                                 else subtypes!(branches, branch, parameters)
                                 end
                             end
@@ -80,12 +81,15 @@ search((@nospecialize x), _) = nothing
 function check_searched((@nospecialize x), parameters)
     searched = parameters.searched
 
-    if !(x ∈ searched)
+    if x ∉ searched
         push!(searched, x)
-        search(x, parameters)
 
-        for method in methods(x)
-            precompile_methods(x, parameters, method, method.sig)
+        if parameters.predicate(x)
+            search(x, parameters)
+
+            for method in methods(x)
+                precompile_methods(x, parameters, method, method.sig)
+            end
         end
     end
 end
@@ -117,7 +121,7 @@ function log_review((@nospecialize x), parameters)
 end
 
 """
-    speculate(::Any; parameters...)
+    speculate(predicate = $default_predicate, ::Any; parameters...)
 
 Generate and `precompile` a workload.
 
@@ -134,7 +138,6 @@ The [`all_modules`](@ref) value ... .
 - `dry::Bool = false`:
     Specifies whether to actually run `precompile`.
     This is useful for testing workloads and in [`time_precompilation`](@ref).
-- `ignore = $default_ignore`: An iterable of values that will not be speculated.
 - `maximum_methods::Integer = $default_maximum_methods`:
     Specifies the maximum number of concrete methods that are generated from a method signature.
     Values less than `1` will throw an error.
@@ -142,13 +145,10 @@ The [`all_modules`](@ref) value ... .
     each parameter type is either concrete or not specialized.
     Values greater than `1` will generated concrete methods from
     the Cartesian product of the subtypes of each parameter type.
-    This prevents spending too much time precompiling a single generic method,
-    but is slower than manually including offending functions and types in `ignore`.
+    This prevents spending too much time precompiling a single generic method.
 - `path::String = ""`:
     Writes each successful precompilation directive to a file
     if the `path` is not empty and it is not a `dry` run.
-- `target::Union{Target, Nothing} = $default_target`:
-    Specifies what methods to precompile. See also [`Target`](@ref).
 - `verbosity::Union{Verbosity, Nothing} = warn`:
     Specifies what logging statements to show.
     If this function is used as a precompilation workload,
@@ -178,32 +178,28 @@ julia> speculate(Example;
 [ Info: Precompiled `Main.Example.g(::String)`
 ```
 """
-function speculate(x;
+function speculate(predicate, x;
     background::Bool = false,
     dry::Bool = false,
-    ignore = default_ignore,
     maximum_methods::Integer = default_maximum_methods,
     path::String = "",
-    target::Union{Target, Nothing} = default_target,
     verbosity::Union{Verbosity, Nothing} = warn
 )
     @nospecialize
     maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
     generate = !(dry || isempty(path))
     open(generate ? path : tempname(); write = true) do file
-        ignored = IdSet{Any}(ignore)
         parameters = Parameters(
             background && isinteractive(),
             Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
             dry,
             file,
             generate,
-            ignored,
             maximum_methods,
-            IdDict{Type, Vector{Type}}(),
-            copy(ignored),
+            predicate,
+            IdDict{Type, Pair{Vector{Type}, Bool}}(),
+            IdSet{Any}(),
             IdDict{DataType, Vector{Any}}(),
-            Speculator.target(target),
             IdDict{Union, Vector{Any}}(),
             Speculator.verbosity(verbosity),
         )
@@ -211,3 +207,4 @@ function speculate(x;
         nothing
     end
 end
+speculate(x; parameters...) = speculate(Returns(true), x; parameters...)

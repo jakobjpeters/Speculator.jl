@@ -44,5 +44,4 @@ macro flag(type, names...)
     end)
 end
 
-include("targets.jl")
 include("verbosities.jl")

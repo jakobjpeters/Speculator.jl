@@ -1,10 +1,11 @@
 
 """
     SpeculationBenchmark
-    SpeculationBenchmark(::Any, samples::Integer = 8;
-        ignore = $default_ignore,
-        maximum_methods::Integer = $default_maximum_methods,
-        target::Union{Target, Nothing} = $default_target
+    SpeculationBenchmark(
+        predicate = $default_predicate,
+        ::Any,
+        samples::Integer = 8;
+        maximum_methods::Integer = $default_maximum_methods
     )
 
 Benchmark the compilation time saved by the precompilation workload ran by [`speculate`](@ref).
@@ -12,7 +13,7 @@ Benchmark the compilation time saved by the precompilation workload ran by [`spe
 For each of the `samples`, this runs a trial precompilation workload.
 Each trial occurs in a new process so that precompilation is not cached across trials.
 Each trial runs
-`speculate(::Any;\u00A0ignore,\u00A0target,\u00A0background\u00A0=\u00A0false,\u00A0verbosity\u00A0=\u00A0nothing)`
+`speculate(::Any;\u00A0background\u00A0=\u00A0false,\u00A0verbosity\u00A0=\u00A0nothing)`
 sequentially with `dry = true` to compile methods in Speculator.jl, `dry = false`
 to measure the runtime of methods in Speculator.jl and calls to `precompile`,
 and `dry = false` to measure the runtime of methods in
@@ -24,8 +25,6 @@ is the difference between the second and third runs.
     Some precompilation workloads take a substantial amount of time to complete.
     It is recommended to select an appropriate workload
     with `speculate` before running a benchmark.
-
-See also [`Target`](@ref).
 
 # Interface
 
@@ -43,14 +42,14 @@ This type implements the iteration interface and part of the indexing interface.
 struct SpeculationBenchmark
     times::Vector{Float64}
 
-    function SpeculationBenchmark(x, samples::Integer = 8;
-        ignore = default_ignore, maximum_methods = default_maximum_methods, target = default_target)
+    function SpeculationBenchmark(predicate, x, samples::Integer = 8;
+            maximum_methods = default_maximum_methods)
         @nospecialize
 
         data_path, time_path = tempname(), tempname()
         times = Float64[]
 
-        serialize(data_path, (x, ignore, maximum_methods, target))
+        serialize(data_path, (predicate, x, maximum_methods))
 
         for _ in 1:samples
             run(Cmd(["julia", "--project=$(active_project())", "--eval",
@@ -61,6 +60,8 @@ struct SpeculationBenchmark
 
         new(times)
     end
+    SpeculationBenchmark(x, samples::Integer) = SpeculationBenchmark(x, samples)
+    SpeculationBenchmark(x) = SpeculationBenchmark(default_predicate, x)
 end
 
 eltype(::Type{<:SpeculationBenchmark}) = Float64
