@@ -61,12 +61,8 @@ end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
-subtypes!(branches, x::DataType, parameters) =
-    if parameters.predicate(x)
-        append!(branches, get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)),
-            parameters.subtype_cache, x))
-    else branches
-    end
+subtypes!(branches, x::DataType, parameters) = append!(branches,
+    get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)), parameters.subtype_cache, x))
 subtypes!(branches, ::UnionAll, _) = branches
-subtypes!(branches, x::Union, parameters) = parameters.predicate(x) ?
-    append!(branches, get!(() -> uniontypes(x), parameters.union_type_cache, x)) : branches
+subtypes!(branches, x::Union, parameters) =
+    append!(branches, get!(() -> uniontypes(x), parameters.union_type_cache, x))

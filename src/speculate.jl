@@ -44,9 +44,10 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
                                 branch = pop!(branches)
 
                                 if isconcretetype(branch)
-                                    push!(new_leaves, branch)
-                                    (new_flag =
-                                        new_flag || length(new_leaves) > maximum_methods) && break
+                                    if parameters.predicate(branch)
+                                        push!(new_leaves, branch)
+                                        (new_flag = new_flag || length(new_leaves) > maximum_methods) && break
+                                    end
                                 else subtypes!(branches, branch, parameters)
                                 end
                             end
