@@ -2,8 +2,8 @@
 module Speculator
 
 #=
-BUG: `speculate(-; background = false, verbosity = warn | review, target = abstract_methods | union_all_caches)`
 TODO: plot number of methods vs `maximum_methods`
+TODO: rename `maximum_methods`
 TODO: tutorial to create a system image?
 TODO: `strict` to only use values defined in current or parent module
 TODO: seperate internal internal and external ignore
@@ -34,10 +34,10 @@ TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 =#
 
-import Base: eltype, firstindex, getindex, iterate, lastindex, length, show
+import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
 using Base:
     MethodList, RefValue, Threads.@spawn,
-    active_project, add_with_overflow, isvarargtype, loaded_modules_array,
+    active_project, add_with_overflow, issubset, isvarargtype, loaded_modules_array,
     mul_with_overflow, Iterators.product, specializations, uniontypes, unwrap_unionall
 using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
@@ -45,16 +45,20 @@ using Serialization: serialize
 using Statistics: mean, median
 using REPL: LineEdit.refresh_line
 
-include("flags/flags.jl")
-include("utilities.jl")
-include("all_modules.jl")
-include("speculation_benchmarks.jl")
-include("speculate.jl")
-include("speculate_repl.jl")
+for path in [
+    "all_modules.jl",
+    "verbosities.jl",
+    "utilities.jl",
+    "speculation_benchmarks.jl",
+    "speculate.jl",
+    "speculate_repl.jl"
+]
+    include(path)
+end
 
 export
     AllModules, SpeculationBenchmark, Target, Verbosity,
-    all_modules, debug, review, speculate_repl, speculate, warn
+    all_modules, debug, review, silent, speculate_repl, speculate, warn
 
 (@ccall jl_generating_output()::Cint) == 1 && speculate(Speculator)
 

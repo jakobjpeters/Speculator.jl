@@ -149,10 +149,10 @@ The [`all_modules`](@ref) value ... .
 - `path::String = ""`:
     Writes each successful precompilation directive to a file
     if the `path` is not empty and it is not a `dry` run.
-- `verbosity::Union{Verbosity, Nothing} = warn`:
+- `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
     If this function is used as a precompilation workload,
-    this should be set to `nothing` or [`warn`](@ref).
+    this should be set to [`silent`](@ref) or [`warn`](@ref).
     See also [`Verbosity`](@ref).
 
 # Examples
@@ -183,7 +183,7 @@ function speculate(predicate, x;
     dry::Bool = false,
     maximum_methods::Integer = default_maximum_methods,
     path::String = "",
-    verbosity::Union{Verbosity, Nothing} = warn
+    verbosity::Verbosity = warn
 )
     @nospecialize
     maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
@@ -201,7 +201,7 @@ function speculate(predicate, x;
             IdSet{Any}(),
             IdDict{DataType, Vector{Any}}(),
             IdDict{Union, Vector{Any}}(),
-            Speculator.verbosity(verbosity),
+            verbosity,
         )
         background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
         nothing
