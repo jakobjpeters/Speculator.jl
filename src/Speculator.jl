@@ -23,7 +23,7 @@ TODO: remove closures, because they can't be precompiled?
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
 using Base:
-    Iterators, Threads, active_project, isvarargtype,
+    Iterators, Threads, IdSet, active_project, isvarargtype,
     mul_with_overflow, specializations, uniontypes, unsorted_names
 using .Iterators: product
 using .Threads: @spawn

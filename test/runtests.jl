@@ -13,9 +13,11 @@ using ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
     end
 
     @test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
+        :IdSet,
         :MethodList,
         :TypeofBottom,
         :Typeof,
+        :active_project,
         :isvarargtype,
         :mul_with_overflow,
         :specializations,
