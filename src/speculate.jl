@@ -1,4 +1,15 @@
 
+function log_warn((@nospecialize x), p::Parameters, (@nospecialize compilable_types))
+    if warn ⊆ p.verbosity
+        _signature = signature(x, compilable_types)
+        p.counters[warned] += 1
+
+        log_repl(() -> (
+            @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
+        ), p)
+    end
+end
+
 function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
     if !(parentmodule(m) == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
@@ -50,29 +61,32 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             end
 
             if !skip
-                specialization_types = IdSet{Type}()
+                dry, generate = p.dry, p.generate
 
-                for specialization in specializations(m)
-                    push!(specialization_types, specialization.specTypes)
+                if !(dry || generate)
+                    specialization_types = IdSet{Type}()
+
+                    for specialization in specializations(m)
+                        push!(specialization_types, specialization.specTypes)
+                    end
                 end
 
                 for compilable_types in product(product_types...)
-                    if p.dry log_debug(found, x, p, compilable_types)
+                    if dry log_debug(found, x, p, compilable_types)
                     else
-                        signature_types = Tuple{Typeof(x), compilable_types...}
+                        signature_type = Tuple{Typeof(x), compilable_types...}
 
-                        if any(==(signature_types), specialization_types)
+                        if generate
+                            if precompile(signature_type)
+                                log_debug(generated, x, p, compilable_types)
+                                println(p.file, "precompile(", signature_type, ')')
+                            else log_warn(x, p, compilable_types)
+                            end
+                        elseif any(==(signature_type), specialization_types)
                             log_debug(skipped, x, p, compilable_types)
-                        elseif precompile(signature_types)
+                        elseif precompile(signature_type)
                             log_debug(precompiled, x, p, compilable_types)
-                            p.generate && println(p.file, "precompile(", signature_types, ')')
-                        elseif warn ⊆ p.verbosity
-                            _signature = signature(x, compilable_types)
-                            p.counters[warned] += 1
-
-                            log_repl(() -> (
-                                @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-                            ), p)
+                        else log_warn(x, p, compilable_types)
                         end
                     end
                 end
@@ -82,7 +96,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
 end
 compile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
-search(x::Module, p::Parameters) = for name in names(x; all = true)
+search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
     if isdefined(x, name) && p.predicate(x, name)
         searched = p.searched
         _x = getproperty(x, name)
@@ -174,6 +188,7 @@ To benchmark the compilation time of a workload, see also [`SpeculationBenchmark
 - `path::String = ""`:
     Writes each successful precompilation directive to a file
     if the `path` is not empty and it is not a `dry` run.
+    Note that these directives may require loading additional modules to run.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
     If this function is used as a precompilation workload,
@@ -215,7 +230,7 @@ function speculate(predicate, value;
         open(generate ? path : tempname(); write = true) do file
             parameters = Parameters(
                 background && isinteractive(),
-                Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
+                Dict(map(o -> o => 0, dry ? [found] : [generated, skipped, precompiled, warned])),
                 dry,
                 file,
                 generate,

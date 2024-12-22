@@ -1,5 +1,5 @@
 
-@enum Counter found skipped precompiled warned
+@enum Counter found generated skipped precompiled warned
 
 struct Parameters
     background::Bool

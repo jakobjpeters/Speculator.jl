@@ -20,7 +20,7 @@ TODO: does `f(@nospecialize _)` work?
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
 using Base:
     Threads.@spawn, active_project, isvarargtype, mul_with_overflow,
-    Iterators.product, specializations, uniontypes
+    Iterators.product, specializations, uniontypes, unsorted_names
 using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
 using Serialization: serialize
