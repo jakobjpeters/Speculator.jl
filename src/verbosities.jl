@@ -100,7 +100,7 @@ const warn = verbosity(4)
 
 issubset(v::Verbosity, _v::Verbosity) = is_subset(v.value, _v.value)
 
-show(io::IO, v::Verbosity) =
+function show(io::IO, v::Verbosity)
     if v == silent print(io, "silent")
     else
         names = Symbol[]
@@ -115,6 +115,7 @@ show(io::IO, v::Verbosity) =
             join(io, names, " | ")
             print(io, ')')
         end
-
-        print(io, "::", Verbosity)
     end
+
+    print(io, "::", Verbosity)
+end

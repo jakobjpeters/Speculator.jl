@@ -24,7 +24,8 @@ is the difference between the second and third runs.
 To automatically `speculate` values input into the REPL, see also [`speculate_repl`](@ref).
 
 !!! tip
-    Some precompilation workloads take a substantial amount of time to complete.
+    Initializing a temporary project and running some precompilation
+    workloads take a substantial amount of time to complete.
     It is recommended to select an appropriate workload using
     `speculate(; dry = true, verbosity = debug | review)` before running a benchmark.
 
@@ -49,15 +50,32 @@ struct SpeculationBenchmark
     )
         @nospecialize
 
+        _active_project = active_project()
+        new_project_directory = mktempdir()
+        new_project_path = joinpath(new_project_directory, "Project.toml")
         data_path, time_path = tempname(), tempname()
         times = Float64[]
 
+        @info "Instantiating temporary project environment for `SpeculationBenchmark`"
+        resolve()
+        cp(_active_project, new_project_path)
+        cp(
+            joinpath(dirname(_active_project), "Manifest.toml"),
+            joinpath(new_project_directory, "Manifest.toml")
+        )
+        activate(new_project_path)
+        develop(; path = dirname(@__DIR__))
+        add(["Pkg", "Serialization"])
+        instantiate()
+        activate(_active_project)
         serialize(data_path, (predicate, x, limit))
 
-        for _ in 1:samples
+        for i in 1:samples
+            @info "Running trial `$i`"
             process = run(Cmd([
                 "julia",
-                "--project=$(active_project())", "--eval",
+                "--project=$new_project_path",
+                "--eval",
                 "include(\"$(dirname(dirname((@__FILE__))))/scripts/trials.jl\")",
                 data_path,
                 time_path

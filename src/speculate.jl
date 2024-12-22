@@ -5,7 +5,7 @@ function log_warn(p::Parameters, caller_type::Type, (@nospecialize compilable_ty
         p.counters[warned] += 1
 
         log_repl(() -> (
-            @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
+            @warn "Compilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
         ), p)
     end
 end
@@ -234,14 +234,14 @@ julia> module Showcase
        end;
 
 julia> speculate(Showcase; verbosity = debug)
-[ Info: Precompiled `Main.Showcase.f()`
+[ Info: Compiled `Main.Showcase.f()`
 
 julia> speculate(Base.isexported, Showcase; verbosity = debug)
-[ Info: Precompiled `Main.Showcase.g(::Int)`
+[ Info: Compiled `Main.Showcase.g(::Int)`
 
 julia> speculate(Showcase.h; limit = 2, verbosity = debug)
-[ Info: Precompiled `Main.Showcase.h(::String)`
-[ Info: Precompiled `Main.Showcase.h(::Symbol)`
+[ Info: Compiled `Main.Showcase.h(::String)`
+[ Info: Compiled `Main.Showcase.h(::Symbol)`
 ```
 """
 function speculate(predicate, value;

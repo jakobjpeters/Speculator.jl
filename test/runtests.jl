@@ -1,6 +1,8 @@
 
 using Aqua, ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
 
+module X end
+
 Aqua.test_all(Speculator)
 
 @testset "ExplicitImports.jl" begin
@@ -19,7 +21,6 @@ Aqua.test_all(Speculator)
         :MethodList,
         :TypeofBottom,
         :Typeof,
-        :active_project,
         :isvarargtype,
         :mul_with_overflow,
         :specializations,
@@ -41,8 +42,58 @@ end
     @test all(v -> v ⊆ v, verbosities)
     @test all(v -> silent ⊆ v, verbosities)
     @test all(((v, n),) -> string(v) == n * "::Verbosity", [
-        debug => "debug", review => "review", warn => "warn"
+        debug => "debug", review => "review", silent => "silent", warn => "warn"
     ])
+end
+
+@testset "`SpeculationBenchmark`" begin
+    sb = SpeculationBenchmark(Test)
+    times = sb.times
+
+    @test all(≥(0), sb)
+
+    for i in eachindex(times)
+        times[i] = 0.0
+    end
+
+    @test eltype(sb) <: Float64
+    @test firstindex(sb) == 1
+    @test (sb[1]; true)
+    @test iterate(sb) == (0.0, 2)
+    @test iterate(sb, 2) == (0.0, 3)
+    @test lastindex(sb) == 8
+    @test length(sb) == 8
+    @test sprint(show, MIME"text/plain"(), sb) == "Precompilation benchmark with `8` samples:\n  Mean:      `0.0000`\n  Median     `0.0000`\n  Minimum:   `0.0000`\n  Maximum:   `0.0000`"
+    # TODO: test display of mean, median, minimum, and maximum
+end
+
+error()
+
+@testset "`speculate_repl`" begin
+    is = Speculator.InputSpeculator((), Returns(true))
+    x = is(nothing)
+    s = string(x)
+    @test isnothing(eval(x))
+    @test !isnothing(match(r"var\"##\d+\" = nothing", s))
+    @test !isnothing(match(r"\(speculate\)\(Returns{Bool}(true), var\"##\d+\"; ()...\)", s))
+    @test !isnothing(match(r"var\"##\d+\"", s))
+
+    _is = Speculator.InputSpeculator((
+        background = true,
+        dry = true,
+        limit = 8,
+        path = "precompile.jl",
+        verbosity = debug | review
+    ), Base.isexported)
+    _x = _is(:(module X end))
+    _s = string(_x)
+    @test isnothing(eval(_x)) isa Module
+    @test !isnothing(match(r"var\"##\d+\" = module X", _s))
+    @test !isnothing(match(r"end", _s))
+    @test !isnothing(match(r"\(speculate\)\(Base.isexported, var\"##\d+\"; (background = true, dry = true, limit = 8, path = \"precompile.jl\", verbosity = (debug | review)::Verbosity)...\)", s))
+    @test !isnothing(match(r"var\"##\d+\"", s))
+    @test (speculate_repl(); true)
+    # TODO: test `speculate_repl`
 end
 
 function count_methods(predicate, value; parameters...)
@@ -79,7 +130,6 @@ visit(count_method_analysis, Base)
 @test method_analysis_count < speculator_count + 5
 @test precompile_signatures_count < speculator_count
 
-module X end
 path = "precompile.jl"
 rm(path; force = true)
 speculate(X; path, dry = true)

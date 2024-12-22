@@ -43,23 +43,23 @@ julia> module Showcase
        end;
 
 julia> speculate(Showcase; verbosity = debug)
-[ Info: Precompiled `Main.Showcase.f()`
+[ Info: Compiled `Main.Showcase.f()`
 
 julia> speculate(Base.isexported, Showcase; verbosity = debug)
-[ Info: Precompiled `Main.Showcase.g(::Int)`
+[ Info: Compiled `Main.Showcase.g(::Int)`
 
 julia> speculate(Showcase.h; limit = 2, verbosity = debug)
-[ Info: Precompiled `Main.Showcase.h(::String)`
-[ Info: Precompiled `Main.Showcase.h(::Symbol)`
+[ Info: Compiled `Main.Showcase.h(::String)`
+[ Info: Compiled `Main.Showcase.h(::Symbol)`
 
 julia> speculate_repl(; limit = 4, verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
 julia> i(::Union{String, Symbol}, ::Union{String, Symbol}) = nothing;
-[ Info: Precompiled `Main.i(::Symbol, ::Symbol)`
-[ Info: Precompiled `Main.i(::String, ::Symbol)`
-[ Info: Precompiled `Main.i(::Symbol, ::String)`
-[ Info: Precompiled `Main.i(::String, ::String)`
+[ Info: Compiled `Main.i(::Symbol, ::Symbol)`
+[ Info: Compiled `Main.i(::String, ::Symbol)`
+[ Info: Compiled `Main.i(::Symbol, ::String)`
+[ Info: Compiled `Main.i(::String, ::String)`
 ```
 
 ## Case Study

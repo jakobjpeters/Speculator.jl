@@ -37,11 +37,11 @@ julia> speculate_repl(; limit = 2, verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
 julia> f() = nothing;
-[ Info: Precompiled `Main.Example.f()`
+[ Info: Compiled `Main.Example.f()`
 
 julia> g(::Union{String, Symbol}) = nothing;
-[ Info: Precompiled `Main.Example.g(::String)`
-[ Info: Precompiled `Main.Example.g(::Symbol)`
+[ Info: Compiled `Main.Example.g(::String)`
+[ Info: Compiled `Main.Example.g(::Symbol)`
 ```
 """
 function speculate_repl(

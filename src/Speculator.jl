@@ -19,6 +19,7 @@ TODO: figure out how `julia --trace-compile=precompile.jl` works
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?
+TODO: check this package works in notebooks
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
@@ -29,8 +30,9 @@ using .Iterators: product
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof
 using InteractiveUtils: subtypes
-using Serialization: serialize
+using Pkg: activate, add, develop, instantiate, resolve
 using REPL: LineEdit.refresh_line
+using Serialization: serialize
 
 include("verbosities.jl")
 include("utilities.jl")
