@@ -1,0 +1,50 @@
+
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - main
+    tags: '*'
+  pull_request:
+    branches:
+      - main
+    tags: '*'
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      COVERAGE: ${{ matrix.version == '1' && matrix.os == 'ubuntu-latest' && matrix.arch == 'x86' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 'pre'
+          - '1'
+          - 'min'
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+        arch:
+          - 'x64'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+          show-versioninfo: true
+      - uses: julia-actions/julia-downgrade-compat@v1
+        if: ${{ matrix.version == 'min' }}
+        with:
+          strict: 'true'
+      - uses: julia-actions/cache@v1
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-processcoverage@v1
+        if: ${{ env.COVERAGE }}
+      - uses: codecov/codecov-action@v4
+        if: ${{ env.COVERAGE }}
+        with:
+          files: lcov.info
