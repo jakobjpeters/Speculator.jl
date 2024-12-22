@@ -47,7 +47,7 @@ end
 
 function count_methods(predicate, value; parameters...)
     path = tempname()
-    speculate(predicate, value; path, dry = true, parameters...)
+    speculate(predicate, value; path, parameters...)
     length(readlines(path))
 end
 count_methods(value; parameters...) = count_methods(
