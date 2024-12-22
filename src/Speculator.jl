@@ -2,6 +2,7 @@
 module Speculator
 
 #=
+BUG: `speculate_repl(; verbosity = review)` fails to handle the terminal text sometimes
 TODO: plot number of methods vs `maximum_methods`
 TODO: rename `maximum_methods`
 TODO: tutorial to create a system image?

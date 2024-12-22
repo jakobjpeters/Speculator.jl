@@ -1,6 +1,7 @@
 
-struct InputSpeculator{T}
+struct InputSpeculator{T, F}
     parameters::T
+    predicate::F
 end
 
 function (is::InputSpeculator)(@nospecialize x)
@@ -8,7 +9,7 @@ function (is::InputSpeculator)(@nospecialize x)
 
     quote
         $_x = $x
-        $speculate($_x; $(is.parameters)...)
+        $speculate($(is.predicate), $_x; $(is.parameters)...)
         $_x
     end
 end
@@ -26,10 +27,7 @@ This function has no effect in non-interactive sessions.
     Use this in a `startup.jl` file to reduce latency in the REPL.
 
 ```jldoctest
-julia> speculate_repl(;
-           target = all_names,
-           verbosity = debug
-       )
+julia> speculate_repl(; verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
 julia> module Example
@@ -37,29 +35,23 @@ julia> module Example
 
            f(::Int) = nothing
            g(::Union{String, Symbol}) = nothing
-       end
-Main.Example
+       end;
 [ Info: Precompiled `Main.Example.f(::Int64)`
 
-julia> speculate_repl(;
-           target = abstract_methods | union_types,
-           verbosity = debug
-       )
+julia> speculate_repl(Base.ispublic; limit = 2, verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
 julia> Example
 Main.Example
 [ Info: Precompiled `Main.Example.g(::Symbol)`
 [ Info: Precompiled `Main.Example.g(::String)`
-
-julia> speculate_repl(false)
-[ Info: The REPL will not call `speculate` with each input
-
-julia> Example
-Main.Example
 ```
 """
-function speculate_repl(install::Bool = true; background::Bool = true, parameters...)
+function speculate_repl(
+    predicate = default_predicate,
+    install::Bool = true;
+    background::Bool = true,
+parameters...)
     @nospecialize
 
     if isinteractive()
@@ -70,7 +62,7 @@ function speculate_repl(install::Bool = true; background::Bool = true, parameter
             if install
                 push!(
                     ast_transforms,
-                    InputSpeculator(merge((background = background,), parameters))
+                    InputSpeculator(merge((background = background,), parameters), predicate)
                 )
                 ""
             else " not"

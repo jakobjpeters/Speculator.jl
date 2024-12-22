@@ -25,12 +25,12 @@ function precompile_method(
 end
 
 function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
-    if !(m.module == Core && Tuple <: sig)
+    if !(parentmodule(m) == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
 
         if isempty(parameter_types) || !isvarargtype(last(parameter_types))
             count = 1
-            flag = false
+            skip = false
             limit = p.limit
             no_specialize = m.nospecialize
             product_cache = p.product_cache
@@ -38,40 +38,44 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
 
             for i in eachindex(parameter_types)
                 parameter_type = parameter_types[i]
-
-                push!(product_types,
+                concrete_types = begin
                     if is_subset(1, no_specialize >> (i - 1)) Type[parameter_type]
                     else
-                        leaves, flag = get!(product_cache, parameter_type) do
-                            branches = Type[parameter_type]
-                            new_flag = false
-                            new_leaves = Type[]
+                        new_concrete_types, skip = get!(product_cache, parameter_type) do
+                            abstract_types = Type[parameter_type]
+                            new_skip = false
+                            new_concrete_types = Type[]
 
-                            while !isempty(branches)
-                                branch = pop!(branches)
+                            while !isempty(abstract_types)
+                                branch = pop!(abstract_types)
 
                                 if isconcretetype(branch)
-                                    push!(new_leaves, branch)
-                                    (new_flag = new_flag || length(new_leaves) > limit) && break
-                                else subtypes!(branches, branch, p)
+                                    push!(new_concrete_types, branch)
+                                    new_skip = new_skip || length(new_concrete_types) > limit
+                                    new_skip && break
+                                else subtypes!(abstract_types, branch, p)
                                 end
                             end
 
-                            new_leaves => new_flag
+                            new_concrete_types => new_skip || isempty(new_concrete_types)
                         end
 
-                        flag = flag || isempty(leaves) || begin
-                            count, overflow = mul_with_overflow(count, length(leaves))
+                        skip = skip || begin
+                            count, overflow = mul_with_overflow(count, length(new_concrete_types))
                             overflow || count > limit
                         end
-                        flag ? break : leaves
+                        skip ? break : new_concrete_types
                     end
-                )
+                end
+
+                push!(product_types, concrete_types)
             end
 
-            if !flag
-                _specializations =
-                    map(specialization -> specialization.specTypes, specializations(m))
+            if !skip
+                _specializations = map(
+                    specialization -> specialization.specTypes,
+                    specializations(m)
+                )
 
                 for concrete_types in product(product_types...)
                     precompile_method(x, p, _specializations, concrete_types)
@@ -171,16 +175,10 @@ julia> module Example
            g(::Union{String, Symbol}) = nothing
        end;
 
-julia> speculate(Example;
-           target = all_names,
-           verbosity = debug
-       )
+julia> speculate(Example; verbosity = debug)
 [ Info: Precompiled `Main.Example.f(::Int64)`
 
-julia> speculate(Example;
-           target = abstract_methods | union_types,
-           verbosity = debug
-       )
+julia> speculate(Base.ispublic, Example; limit = 2, verbosity = debug)
 [ Info: Precompiled `Main.Example.g(::Symbol)`
 [ Info: Precompiled `Main.Example.g(::String)`
 ```

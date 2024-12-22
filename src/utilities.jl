@@ -63,13 +63,13 @@ end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
-subtypes!(branches::Vector{Type}, x::DataType, p::Parameters) = append!(branches, get!(
+subtypes!(abstract_types::Vector{Type}, x::DataType, p::Parameters) = append!(abstract_types, get!(
     () -> filter!(subtype -> !(x <: subtype), subtypes(x)),
     p.subtype_cache,
     x
 ))
-subtypes!(branches::Vector{Type}, ::UnionAll, ::Parameters) = branches
-subtypes!(branches::Vector{Type}, x::Union, p::Parameters) = append!(
-    branches,
+subtypes!(abstract_types::Vector{Type}, ::UnionAll, ::Parameters) = abstract_types
+subtypes!(abstract_types::Vector{Type}, x::Union, p::Parameters) = append!(
+    abstract_types,
     get!(() -> uniontypes(x), p.union_type_cache, x)
 )

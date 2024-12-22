@@ -33,10 +33,7 @@ julia> using Speculator
 ### Showcase
 
 ```julia-repl
-julia> speculate_repl(;
-           target = all_names,
-           verbosity = debug
-       )
+julia> speculate_repl(; verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
 julia> module Showcase
@@ -44,14 +41,14 @@ julia> module Showcase
 
            f(::Int) = nothing
            g(::Union{String, Symbol}) = nothing
-       end
-Main.Showcase
-[ Info: Precompiled `Main.Showcase.g(::Int64)
+       end;
+[ Info: Precompiled `Main.Showcase.f(::Int64)`
 
-julia> speculate(Showcase;
-           target = abstract_methods | union_types,
-           verbosity = debug
-       )
+julia> speculate_repl(Base.ispublic; limit = 2, verbosity = debug)
+[ Info: The REPL will call `speculate` with each input
+
+julia> Showcase
+Main.Showcase
 [ Info: Precompiled `Main.Showcase.g(::Symbol)`
 [ Info: Precompiled `Main.Showcase.g(::String)`
 ```
