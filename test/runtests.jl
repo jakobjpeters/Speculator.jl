@@ -55,3 +55,23 @@ speculate(Base; path)
 
 @test count_methods(Returns(false)) == 0
 @test count_methods(Returns(false), () -> nothing) == 1
+
+# speculate(Base)
+# count precompiled + skipped
+# speculate(Base)
+# test that 0 were precompiled and total number were skipped
+
+#=
+julia> (::String)() = nothing;
+
+julia> speculate(""; verbosity = debug)
+[ Info: Skipped `(::String)()`
+
+julia> speculate(String; verbosity = debug)
+[ Info: Skipped `String(::Vector{UInt8})`
+...
+
+julia> speculate(string; verbosity = debug)
+[ Info: Skipped `string(::Base.UUID)`
+...
+=#

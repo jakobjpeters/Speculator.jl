@@ -1,7 +1,11 @@
 
-function log_warn((@nospecialize x), p::Parameters, (@nospecialize compilable_types))
+function log_warn(
+    p::Parameters,
+    caller_type::Type,
+    (@nospecialize compilable_types)
+)
     if warn ⊆ p.verbosity
-        _signature = signature(x, compilable_types)
+        _signature = signature(caller_type, compilable_types)
         p.counters[warned] += 1
 
         log_repl(() -> (
@@ -10,7 +14,7 @@ function log_warn((@nospecialize x), p::Parameters, (@nospecialize compilable_ty
     end
 end
 
-function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
+function compile_methods(p::Parameters, m::Method, sig::DataType)
     if !(parentmodule(m) == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
 
@@ -73,21 +77,21 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                 end
 
                 for compilable_types in product(product_types...)
-                    if dry log_debug(found, x, p, compilable_types)
+                    if dry log_debug(p, found, caller_type, compilable_types)
                     else
                         signature_type = Tuple{caller_type, compilable_types...}
 
                         if generate
                             if precompile(signature_type)
-                                log_debug(generated, x, p, compilable_types)
+                                log_debug(p, generated, caller_type, compilable_types)
                                 println(p.file, "precompile(", signature_type, ')')
-                            else log_warn(x, p, compilable_types)
+                            else log_warn(p, caller_type, compilable_types)
                             end
                         elseif any(==(signature_type), specialization_types)
-                            log_debug(skipped, x, p, compilable_types)
+                            log_debug(p, skipped, caller_type, compilable_types)
                         elseif precompile(signature_type)
-                            log_debug(precompiled, x, p, compilable_types)
-                        else log_warn(x, p, compilable_types)
+                            log_debug(p, precompiled, caller_type, compilable_types)
+                        else log_warn(p, caller_type, compilable_types)
                         end
                     end
                 end
@@ -95,8 +99,12 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
         end
     end
 end
-compile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
+compile_methods(::Parameters, ::Method, ::UnionAll) = nothing
 
+search(x::MethodList, p::Parameters) = for method in x
+    search(method, p)
+end
+search(x::Method, p::Parameters) = compile_methods(p, x, x.sig)
 search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
     if isdefined(x, name) && p.predicate(x, name)
         searched = p.searched
@@ -108,9 +116,7 @@ search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
         end
     end
 end
-search((@nospecialize x), p::Parameters) = for method in methods(x)
-    compile_methods(x, p, method, method.sig)
-end
+search((@nospecialize x), p::Parameters) = search(methods(x), p)
 
 function log_review((@nospecialize x), p::Parameters)
     elapsed = @elapsed search(x, p)

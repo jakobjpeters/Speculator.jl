@@ -26,11 +26,16 @@ const sleep_duration = 0.01
 
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
-function log_debug(c::Counter, (@nospecialize x), p::Parameters, (@nospecialize types))
+function log_debug(
+    p::Parameters,
+    c::Counter,
+    caller_type::Type,
+    (@nospecialize caller_types)
+)
     p.counters[c] += 1
 
     if debug ⊆ p.verbosity
-        _signature = signature(x, types)
+        _signature = signature(caller_type, caller_types)
         statement = uppercasefirst(string(c))
 
         log_repl(() -> (@info "$statement `$_signature`"), p)
@@ -58,12 +63,20 @@ function round_time(x::Float64)
     whole * '.' * rpad(fraction, 4, '0')
 end
 
-function signature(x, parameter_types)
+function signature(caller_type::Type, @nospecialize compilable_types)
     @nospecialize
-    signature(x) * '(' * join(map(type -> "::" * string(type), parameter_types), ", ") * ')'
+    s = join(map(type -> "::" * string(type), compilable_types), ", ")
+    signature(caller_type) * '(' * s * ')'
 end
-signature(@nospecialize x::Union{Function, Type}) = repr(x)
-signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
+function signature(caller_type::DataType)
+    if isdefined(caller_type, :instance) repr(caller_type.instance)
+    else
+        parameters = caller_type.parameters
+        isempty(parameters) ? "(::" * repr(caller_type) * ')' : repr(only(parameters))
+    end
+end
+signature(caller_type::UnionAll) = "(::" * repr(caller_type) * ')'
+signature(caller_type::Union{Union, TypeofBottom}) = repr(caller_type)
 
 subtypes!(abstract_types::Vector{Type}, x::DataType, p::Parameters) = append!(abstract_types, get!(
     () -> filter!(subtype -> !(x <: subtype), subtypes(x)),

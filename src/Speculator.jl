@@ -17,12 +17,14 @@ TODO: figure out how `julia --trace-compile=precompile.jl` works
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they are not precompilable
+TODO: count generic methods
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
 using Base:
-    Threads.@spawn, active_project, isvarargtype, mul_with_overflow,
-    Iterators.product, specializations, uniontypes, unsorted_names
+    MethodList, Threads.@spawn, active_project, isvarargtype, mul_with_overflow,
+    Iterators.product, specializations, typename, uniontypes, unsorted_names
+using Core: TypeofBottom
 using InteractiveUtils: subtypes
 using Serialization: serialize
 using Statistics: mean, median
