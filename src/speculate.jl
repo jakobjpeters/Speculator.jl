@@ -1,30 +1,5 @@
 
-function precompile_method(
-    (@nospecialize x),
-    p::Parameters,
-    _specializations::Union{Vector{DataType}, Vector{Any}},
-    (@nospecialize types)
-)
-    if p.dry log_debug(found, x, p, types)
-    else
-        signature_types = Tuple{Typeof(x), types...}
-
-        if any(==(signature_types), _specializations) log_debug(skipped, x, p, types)
-        elseif precompile(signature_types)
-            log_debug(precompiled, x, p, types)
-            p.generate && println(p.file, "precompile(", signature_types, ')')
-        elseif warn ⊆ p.verbosity
-            _signature = signature(x, types)
-            p.counters[warned] += 1
-
-            log_repl(() -> (
-                @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-            ), p)
-        end
-    end
-end
-
-function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
+function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
     if !(parentmodule(m) == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
 
@@ -75,19 +50,37 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
             end
 
             if !skip
-                _specializations = map(
-                    specialization -> specialization.specTypes,
-                    specializations(m)
-                )
+                specialization_types = IdSet{Type}()
+
+                for specialization in specializations(m)
+                    push!(specialization_types, specialization.specTypes)
+                end
 
                 for compilable_types in product(product_types...)
-                    precompile_method(x, p, _specializations, compilable_types)
+                    if p.dry log_debug(found, x, p, compilable_types)
+                    else
+                        signature_types = Tuple{Typeof(x), compilable_types...}
+
+                        if any(==(signature_types), specialization_types)
+                            log_debug(skipped, x, p, compilable_types)
+                        elseif precompile(signature_types)
+                            log_debug(precompiled, x, p, compilable_types)
+                            p.generate && println(p.file, "precompile(", signature_types, ')')
+                        elseif warn ⊆ p.verbosity
+                            _signature = signature(x, compilable_types)
+                            p.counters[warned] += 1
+
+                            log_repl(() -> (
+                                @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
+                            ), p)
+                        end
+                    end
                 end
             end
         end
     end
 end
-precompile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
+compile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
 search(x::Module, p::Parameters) = for name in names(x; all = true)
     if isdefined(x, name) && p.predicate(x, name)
@@ -101,7 +94,7 @@ search(x::Module, p::Parameters) = for name in names(x; all = true)
     end
 end
 search((@nospecialize x), p::Parameters) = for method in methods(x)
-    precompile_methods(x, p, method, method.sig)
+    compile_methods(x, p, method, method.sig)
 end
 
 function log_review((@nospecialize x), p::Parameters)
