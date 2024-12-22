@@ -23,28 +23,21 @@ This may be disabled using `speculate_repl(false)`.
 Subsequent calls to this function may be used to change the keyword parameters.
 This function has no effect in non-interactive sessions.
 
+To benchmark the compilation time of a workload, see also [`SpeculationBenchmark`](@ref).
+
 !!! tip
     Use this in a `startup.jl` file to reduce latency in the REPL.
 
 ```jldoctest
-julia> speculate_repl(; verbosity = debug)
+julia> speculate_repl(; limit = 2, verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
-julia> module Example
-           export g
+julia> f() = nothing;
+[ Info: Precompiled `Main.Example.f()`
 
-           f(::Int) = nothing
-           g(::Union{String, Symbol}) = nothing
-       end;
-[ Info: Precompiled `Main.Example.f(::Int64)`
-
-julia> speculate_repl(Base.ispublic; limit = 2, verbosity = debug)
-[ Info: The REPL will call `speculate` with each input
-
-julia> Example
-Main.Example
-[ Info: Precompiled `Main.Example.g(::Symbol)`
+julia> g(::Union{String, Symbol}) = nothing;
 [ Info: Precompiled `Main.Example.g(::String)`
+[ Info: Precompiled `Main.Example.g(::Symbol)`
 ```
 """
 function speculate_repl(
@@ -57,7 +50,6 @@ parameters...)
     if isinteractive()
         ast_transforms = Base.active_repl_backend.ast_transforms
         filter!(ast_transform -> !(ast_transform isa InputSpeculator), ast_transforms)
-
         s = begin
             if install
                 push!(
@@ -68,7 +60,6 @@ parameters...)
             else " not"
             end
         end
-
         @info "The REPL will$s call `speculate` with each input"
     end
 end

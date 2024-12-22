@@ -4,14 +4,14 @@
 
 A flag that determine what logging statements are shown during [`speculate`](@ref).
 
-The base flags are [`silent`](@ref), [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
+The component flags are [`silent`](@ref), [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
 
 # Interface
 
 - `|(::Verbosity,\u00A0::Verbosity)`
-    - Combine the verbosities such that each satisfies `issubset` with the resulting verbosity.
+    - Combine the verbosities such that each satisfies `issubset` with the returned verbosity.
 - `issubset(::Verbosity,\u00A0::Verbosity)`
-    - Check whether each flag of the first verbosity is a flag of the second verbosity.
+    - Check whether each flag of the first verbosity is a component of the second verbosity.
 - `show(::IO,\u00A0::Verbosity)`
 
 # Examples

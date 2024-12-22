@@ -4,7 +4,7 @@ using PrecompileSignatures: precompilable
 using Speculator
 using Test: @test
 
-function count_methods(; parameters...)
+function count_methods(predicate = Speculator.default_predicate; parameters...)
     _read, _write = pipe = Pipe()
     redirect_stderr(() -> speculate(Base; dry = true, verbosity = review, parameters...), pipe)
     close(_write)
@@ -40,3 +40,5 @@ speculate(Base; path)
 @test (include(path); true)
 
 @test issorted(map(maximum_methods -> count_methods(; maximum_methods), 1:10))
+
+@test count_methods(Returns(false)) == 0

@@ -1,8 +1,6 @@
 
 @enum Counter found skipped precompiled warned
 
-struct AllModules end
-
 struct Parameters
     background::Bool
     counters::Dict{Counter, Int}

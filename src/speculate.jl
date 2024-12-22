@@ -38,37 +38,40 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
 
             for i in eachindex(parameter_types)
                 parameter_type = parameter_types[i]
-                concrete_types = begin
+                compilable_types = begin
                     if is_subset(1, no_specialize >> (i - 1)) Type[parameter_type]
                     else
-                        new_concrete_types, skip = get!(product_cache, parameter_type) do
+                        new_compilable_types, skip = get!(product_cache, parameter_type) do
                             abstract_types = Type[parameter_type]
                             new_skip = false
-                            new_concrete_types = Type[]
+                            new_compilable_types = Type[]
 
                             while !isempty(abstract_types)
                                 branch = pop!(abstract_types)
 
                                 if isconcretetype(branch)
-                                    push!(new_concrete_types, branch)
-                                    new_skip = new_skip || length(new_concrete_types) > limit
+                                    push!(new_compilable_types, branch)
+                                    new_skip = new_skip || length(new_compilable_types) > limit
                                     new_skip && break
                                 else subtypes!(abstract_types, branch, p)
                                 end
                             end
 
-                            new_concrete_types => new_skip || isempty(new_concrete_types)
+                            new_compilable_types => new_skip || isempty(new_compilable_types)
                         end
 
                         skip = skip || begin
-                            count, overflow = mul_with_overflow(count, length(new_concrete_types))
+                            count, overflow = mul_with_overflow(
+                                count,
+                                length(new_compilable_types)
+                            )
                             overflow || count > limit
                         end
-                        skip ? break : new_concrete_types
+                        skip ? break : new_compilable_types
                     end
                 end
 
-                push!(product_types, concrete_types)
+                push!(product_types, compilable_types)
             end
 
             if !skip
@@ -77,8 +80,8 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
                     specializations(m)
                 )
 
-                for concrete_types in product(product_types...)
-                    precompile_method(x, p, _specializations, concrete_types)
+                for compilable_types in product(product_types...)
+                    precompile_method(x, p, _specializations, compilable_types)
                 end
             end
         end
@@ -125,16 +128,38 @@ function log_review((@nospecialize x), p::Parameters)
 end
 
 """
-    speculate(predicate = $default_predicate, ::Any; parameters...)
+    speculate(predicate = $default_predicate, value; parameters...)
 
-Generate and `precompile` a workload.
+Generate a precompilation a workload.
 
-This function can be called repeatedly with the same value,
-which may be useful if there are new methods to precompile.
+To automatically `speculate` values input into the REPL, see also [`speculate_repl`](@ref).
+To benchmark the compilation time of a workload, see also [`SpeculationBenchmark`](@ref).
 
-!!! info
+!!! tip
     This function only runs when called during precompilation or an interactive session,
     or when writing precompilation directives to a file.
+
+!!! tip
+    This function can be called repeatedly with the same `value`,
+    which may be useful in interactive environments if there are new methods to precompile.
+
+# Parameters
+
+- `predicate(::Module, ::Symbol)::Bool`:
+    This predicate is checked for each name given by `names(::Module; all = true)`.
+    Returning `true` specifies to search `getproperty(::Module, ::Symbol)`,
+    whereas returning `false` specifies to ignore the value.
+    The default predicate `$default_predicate` will search every possible method,
+    up to its generic `limit`, whereas the predicate `Returns(false)` will
+    only search for methods of values passed directly to `speculate`.
+    This new value can also be accessed in the same manner within the `predicate`.
+    Some useful predicates include `Base.isexported`, `Base.ispublic`,
+    checking properties of the value itself, and a combination thereof.
+- `value`:
+    When given a `Module`, `speculate` will recursively
+    search its contents using `names(::Module; all = true)`.
+    For each other value, each of their generic `methods`
+    are searched for corresponding compilable signatures.
 
 # Keyword parameters
 
@@ -142,15 +167,16 @@ which may be useful if there are new methods to precompile.
     Specifies whether to precompile on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
 - `dry::Bool = false`:
-    Specifies whether to actually run `precompile`.
-    This is useful for testing workloads and in [`time_precompilation`](@ref).
+    Specifies whether to run `precompile` on generated method signatures.
+    This is useful for testing workloads with `verbosity = debug` and in `time_precompilation`.
+    Methods that have already been specialized are skipped.
+    Note that `dry` must be `false` to save the workload to a file with the `path` parameter.
 - `limit::Integer = $default_limit`:
-    Specifies the maximum number of concrete methods that are generated from a method signature.
+    Specifies the maximum number of compilable methods that are generated from a generic method.
     Values less than `1` will throw an error.
-    A value equal to `1` will only use methods where
-    each parameter type is either concrete or not specialized.
-    Values greater than `1` will generated concrete methods from
-    the Cartesian product of the subtypes of each parameter type.
+    Otherwise, method signatures will be generated from the Cartesian product each parameter type.
+    Concrete types and abstract types marked with `@nospecialize` are used directly.
+    Otherwise, compilable types are obtained from the subtypes of `DataType` and `Union`.
     This prevents spending too much time precompiling a single generic method.
 - `path::String = ""`:
     Writes each successful precompilation directive to a file
@@ -163,22 +189,26 @@ which may be useful if there are new methods to precompile.
 
 # Examples
 ```jldoctest
-julia> module Example
-           export g
+julia> module Showcase
+           export g, h
 
-           f(::Int) = nothing
-           g(::Union{String, Symbol}) = nothing
+           f() = nothing
+           g(::Int) = nothing
+           h(::Union{String, Symbol}) = nothing
        end;
 
-julia> speculate(Example; verbosity = debug)
-[ Info: Precompiled `Main.Example.f(::Int64)`
+julia> speculate(Showcase; verbosity = debug)
+[ Info: Precompiled `Main.Showcase.f()`
 
-julia> speculate(Base.ispublic, Example; limit = 2, verbosity = debug)
-[ Info: Precompiled `Main.Example.g(::Symbol)`
-[ Info: Precompiled `Main.Example.g(::String)`
+julia> speculate(Base.isexported, Showcase; verbosity = debug)
+[ Info: Precompiled `Main.Showcase.g(::Int)`
+
+julia> speculate(Showcase.h; limit = 2, verbosity = debug)
+[ Info: Precompiled `Main.Showcase.h(::String)`
+[ Info: Precompiled `Main.Showcase.h(::Symbol)`
 ```
 """
-function speculate(predicate, x;
+function speculate(predicate, value;
     background::Bool = false,
     dry::Bool = false,
     limit::Integer = default_limit,
@@ -186,10 +216,9 @@ function speculate(predicate, x;
     verbosity::Verbosity = warn
 )
     @nospecialize
+    limit > 0 || error("The `limit` must be greater than `0`")
     generate = !(dry || isempty(path))
     if generate || isinteractive() || (@ccall jl_generating_output()::Cint) == 1
-        limit > 0 || error("The `limit` must be greater than `0`")
-
         open(generate ? path : tempname(); write = true) do file
             parameters = Parameters(
                 background && isinteractive(),
@@ -206,7 +235,7 @@ function speculate(predicate, x;
                 verbosity,
             )
 
-            background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
+            background ? (@spawn log_review(value, parameters)) : log_review(value, parameters)
             nothing
         end
     end

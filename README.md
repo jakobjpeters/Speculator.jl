@@ -3,7 +3,8 @@
 
 ## Introduction
 
-Speculator.jl is a tool to reduce latency by generating and running precompilation workloads.
+Speculator.jl is a tool to reduce latency by automatically
+generating and running compilation workloads.
 
 Code needs to be compiled, either upon the installation of a package or as needed during runtime.
 In the former case, this can be used in a package as a supplement or alternative to
@@ -33,24 +34,32 @@ julia> using Speculator
 ### Showcase
 
 ```julia-repl
-julia> speculate_repl(; verbosity = debug)
-[ Info: The REPL will call `speculate` with each input
-
 julia> module Showcase
-           export g
+           export g, h
 
-           f(::Int) = nothing
-           g(::Union{String, Symbol}) = nothing
+           f() = nothing
+           g(::Int) = nothing
+           h(::Union{String, Symbol}) = nothing
        end;
-[ Info: Precompiled `Main.Showcase.f(::Int64)`
 
-julia> speculate_repl(Base.ispublic; limit = 2, verbosity = debug)
+julia> speculate(Showcase; verbosity = debug)
+[ Info: Precompiled `Main.Showcase.f()`
+
+julia> speculate(Base.isexported, Showcase; verbosity = debug)
+[ Info: Precompiled `Main.Showcase.g(::Int)`
+
+julia> speculate(Showcase.h; limit = 2, verbosity = debug)
+[ Info: Precompiled `Main.Showcase.h(::String)`
+[ Info: Precompiled `Main.Showcase.h(::Symbol)`
+
+julia> speculate_repl(; limit = 4, verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
-julia> Showcase
-Main.Showcase
-[ Info: Precompiled `Main.Showcase.g(::Symbol)`
-[ Info: Precompiled `Main.Showcase.g(::String)`
+julia> i(::Union{String, Symbol}, ::Union{String, Symbol}) = nothing;
+[ Info: Precompiled `Main.i(::Symbol, ::Symbol)`
+[ Info: Precompiled `Main.i(::String, ::Symbol)`
+[ Info: Precompiled `Main.i(::Symbol, ::String)`
+[ Info: Precompiled `Main.i(::String, ::String)`
 ```
 
 ## Case Study
@@ -101,17 +110,15 @@ cost ratio in terms of compilation and loading time.
 
 ## Features
 
-- Automatically generate a precompilation workload from
-    modules, functions, types, and callable objects.
+- Automatically generate a compilation workload from modules and callable objects.
     - Configurable to run in the background, select precompilation targets, and write to a file.
-- Estimate the compilation time saved by a workload.
-- Custom REPL mode that runs a workload for every input.
+    - Can be ran in the REPL after each input.
+- Benchmark the compilation time of a workload.
 
 ### Planned
 
 - Disable during development using Preferences.jl?
-- Support for Revise.jl?
-- Threaded workloads?
+- Support for `UnionAll` types?
 
 ## Similar Packages
 
