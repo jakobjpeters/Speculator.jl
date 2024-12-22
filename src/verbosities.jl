@@ -33,7 +33,7 @@ false
 struct Verbosity
     value::UInt8
 
-    global verbosity(x) = new(x)
+    global verbosity(x::Union{Int, UInt8}) = new(x)
 
     Base.:|(v::Verbosity, _v::Verbosity) = new(v.value | _v.value)
 end

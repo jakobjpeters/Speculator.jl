@@ -2,7 +2,7 @@
 using Base: find_package
 using Pkg: PackageSpec, add
 using Serialization: deserialize
-using Speculator: speculate
+using Speculator: silent, speculate
 
 load_data(path) =
     try deserialize(path)
@@ -24,7 +24,7 @@ load_data(path) =
 const data_path, time_path = ARGS
 const predicate, x, maximum_methods = load_data(data_path)
 
-trial(dry) = @elapsed speculate(predicate, x; dry, maximum_methods, verbosity = nothing)
+trial(dry) = @elapsed speculate(predicate, x; dry, maximum_methods, verbosity = silent)
 
 trial(true)
 write(time_path, trial(false) - trial(false))

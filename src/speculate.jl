@@ -1,32 +1,33 @@
 
-precompile_method((@nospecialize x), parameters, _specializations, (@nospecialize types)) =
-    if parameters.dry log_debug(found, x, parameters, types)
+precompile_method((@nospecialize x), p::Parameters, _specializations::Union{Vector{DataType}, Vector{Any}}, (@nospecialize types)) =
+    if p.dry log_debug(found, x, p, types)
     else
         signature_types = Tuple{Typeof(x), types...}
 
-        if any(==(signature_types), _specializations) log_debug(skipped, x, parameters, types)
+        if any(==(signature_types), _specializations) log_debug(skipped, x, p, types)
         elseif precompile(signature_types)
-            log_debug(precompiled, x, parameters, types)
-            parameters.generate && println(parameters.file, "precompile(", signature_types, ')')
-        elseif warn ⊆ parameters.verbosity
+            log_debug(precompiled, x, p, types)
+            p.generate && println(p.file, "precompile(", signature_types, ')')
+        elseif warn ⊆ p.verbosity
             _signature = signature(x, types)
-            parameters.counters[warned] += 1
+            p.counters[warned] += 1
 
             log_repl(() -> (
                 @warn "Precompilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-            ), parameters)
+            ), p)
         end
     end
-precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
-    if !(method.module == Core && Tuple <: sig)
+
+precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType) =
+    if !(m.module == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
 
         if isempty(parameter_types) || !isvarargtype(last(parameter_types))
             count = 1
             flag = false
-            maximum_methods = parameters.maximum_methods
-            no_specialize = method.nospecialize
-            product_cache = parameters.product_cache
+            maximum_methods = p.maximum_methods
+            no_specialize = m.nospecialize
+            product_cache = p.product_cache
             product_types = Vector{Type}[]
 
             for i in eachindex(parameter_types)
@@ -44,11 +45,11 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
                                 branch = pop!(branches)
 
                                 if isconcretetype(branch)
-                                    if parameters.predicate(branch)
+                                    if p.predicate(branch)
                                         push!(new_leaves, branch)
                                         (new_flag = new_flag || length(new_leaves) > maximum_methods) && break
                                     end
-                                else subtypes!(branches, branch, parameters)
+                                else subtypes!(branches, branch, p)
                                 end
                             end
 
@@ -67,51 +68,51 @@ precompile_methods((@nospecialize x), parameters, method, sig::DataType) =
 
             if !flag
                 _specializations =
-                    map(specialization -> specialization.specTypes, specializations(method))
+                    map(specialization -> specialization.specTypes, specializations(m))
 
                 for concrete_types in product(product_types...)
-                    precompile_method(x, parameters, _specializations, concrete_types)
+                    precompile_method(x, p, _specializations, concrete_types)
                 end
             end
         end
     end
-precompile_methods((@nospecialize x), _, _, ::UnionAll) = nothing
+precompile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
-search(x::Module, parameters) = for name in names(x; all = true)
-    isdefined(x, name) && check_searched(getproperty(x, name), parameters)
+search(x::Module, p::Parameters) = for name in names(x; all = true)
+    isdefined(x, name) && check_searched(getproperty(x, name), p)
 end
-search((@nospecialize x), _) = nothing
+search((@nospecialize x), ::Parameters) = nothing
 
-function check_searched((@nospecialize x), parameters)
-    searched = parameters.searched
+function check_searched((@nospecialize x), p::Parameters)
+    searched = p.searched
 
     if x ∉ searched
         push!(searched, x)
 
-        if parameters.predicate(x)
-            search(x, parameters)
+        if p.predicate(x)
+            search(x, p)
 
             for method in methods(x)
-                precompile_methods(x, parameters, method, method.sig)
+                precompile_methods(x, p, method, method.sig)
             end
         end
     end
 end
 
-handle_input((@nospecialize x), parameters) = check_searched(something(x), parameters)
-handle_input(::AllModules, parameters) = for _module in loaded_modules_array()
-    check_searched(_module, parameters)
+handle_input((@nospecialize x), p::Parameters) = check_searched(x, p)
+handle_input(::AllModules, p::Parameters) = for _module in loaded_modules_array()
+    check_searched(_module, p)
 end
 
-function log_review((@nospecialize x), parameters)
-    elapsed = @elapsed handle_input(x, parameters)
+function log_review((@nospecialize x), p::Parameters)
+    elapsed = @elapsed handle_input(x, p)
 
-    if review ⊆ parameters.verbosity
-        log_repl(parameters) do
-            counters = parameters.counters
-            dry = parameters.dry
+    if review ⊆ p.verbosity
+        log_repl(p) do
+            counters = p.counters
+            dry = p.dry
             seconds = round_time(elapsed)
-            values = length(parameters.searched)
+            values = length(p.searched)
             s = " methods from `$values` value$(values == 1 ? "" : "s") in `$seconds` seconds"
 
             if dry @info "Found `$(counters[found])`$s"
@@ -211,4 +212,7 @@ function speculate(predicate, x;
         nothing
     end
 end
-speculate(x; parameters...) = speculate(Returns(true), x; parameters...)
+function speculate(x; parameters...)
+    @nospecialize
+    speculate(Returns(true), x; parameters...)
+end

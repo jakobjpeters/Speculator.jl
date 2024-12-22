@@ -42,9 +42,10 @@ This type implements the iteration interface and part of the indexing interface.
 struct SpeculationBenchmark
     times::Vector{Float64}
 
-    function SpeculationBenchmark(predicate, x, samples::Integer = 8;
-            maximum_methods = default_maximum_methods)
+    function SpeculationBenchmark(predicate, x, samples::Integer = default_samples;
+        maximum_methods = default_maximum_methods)
         @nospecialize
+        @show samples
 
         data_path, time_path = tempname(), tempname()
         times = Float64[]
@@ -60,11 +61,14 @@ struct SpeculationBenchmark
 
         new(times)
     end
-    SpeculationBenchmark(x, samples::Integer) = SpeculationBenchmark(x, samples)
-    SpeculationBenchmark(x) = SpeculationBenchmark(default_predicate, x)
+    function SpeculationBenchmark(x, samples::Integer)
+        @nospecialize
+        SpeculationBenchmark(default_predicate, x, samples)
+    end
+    SpeculationBenchmark(@nospecialize x) = SpeculationBenchmark(x, default_samples)
 end
 
-eltype(::Type{<:SpeculationBenchmark}) = Float64
+eltype(::Type{SpeculationBenchmark}) = Float64
 
 firstindex(pb::SpeculationBenchmark) = firstindex(pb.times)
 

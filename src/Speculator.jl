@@ -60,6 +60,6 @@ export
     AllModules, SpeculationBenchmark, Target, Verbosity,
     all_modules, debug, review, silent, speculate_repl, speculate, warn
 
-(@ccall jl_generating_output()::Cint) == 1 && speculate(Speculator)
+(@ccall jl_generating_output()::Cint) == 1 && speculate(Speculator; maximum_methods = 4)
 
 end # Speculator

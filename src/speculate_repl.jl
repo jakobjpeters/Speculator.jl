@@ -3,7 +3,7 @@ struct InputSpeculator{T}
     parameters::T
 end
 
-function (is::InputSpeculator)(x)
+function (is::InputSpeculator)(@nospecialize x)
     _x = gensym()
     quote
         $_x = $x
@@ -13,7 +13,7 @@ function (is::InputSpeculator)(x)
 end
 
 """
-    speculate_repl(::Bool = true; background = true, parameters...)
+    speculate_repl(::Bool = true; background::Bool = true, parameters...)
 
 Call [`speculate`](@ref) on each input in the REPL.
 
@@ -58,15 +58,19 @@ julia> Example
 Main.Example
 ```
 """
-speculate_repl(install = true; background = true, parameters...) = if isinteractive()
-    ast_transforms = Base.active_repl_backend.ast_transforms
-    filter!(ast_transform -> !(ast_transform isa InputSpeculator), ast_transforms)
+function speculate_repl(install::Bool = true; background::Bool = true, parameters...)
+    @nospecialize
 
-    s = if install
-        push!(ast_transforms, InputSpeculator(merge((background = background,), parameters)))
-        ""
-    else " not"
+    if isinteractive()
+        ast_transforms = Base.active_repl_backend.ast_transforms
+        filter!(ast_transform -> !(ast_transform isa InputSpeculator), ast_transforms)
+
+        s = if install
+            push!(ast_transforms, InputSpeculator(merge((background = background,), parameters)))
+            ""
+        else " not"
+        end
+
+        @info "The REPL will$s call `speculate` with each input"
     end
-
-    @info "The REPL will$s call `speculate` with each input"
 end

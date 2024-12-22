@@ -3,16 +3,18 @@ const default_maximum_methods = 1
 
 const default_predicate = Returns(true)
 
+const default_samples = 8
+
 @enum Counter found skipped precompiled warned
 
-struct Parameters{T}
+struct Parameters
     background::Bool
     counters::Dict{Counter, Int}
     dry::Bool
     file::IOStream
     generate::Bool
     maximum_methods::Int
-    predicate::T
+    predicate
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}}
     searched::IdSet{Any}
     subtype_cache::IdDict{DataType, Vector{Any}}
@@ -20,21 +22,21 @@ struct Parameters{T}
     verbosity::Verbosity
 end
 
-is_subset(f, _f) = f == (f & _f)
+is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
-function log_debug(counter, (@nospecialize x), parameters, (@nospecialize types))
-    parameters.counters[counter] += 1
+function log_debug(c::Counter, (@nospecialize x), p::Parameters, (@nospecialize types))
+    p.counters[c] += 1
 
-    if debug ⊆ parameters.verbosity
+    if debug ⊆ p.verbosity
         _signature = signature(x, types)
-        statement = uppercasefirst(string(counter))
+        statement = uppercasefirst(string(c))
 
-        log_repl(() -> (@info "$statement `$_signature`"), parameters)
+        log_repl(() -> (@info "$statement `$_signature`"), p)
     end
 end
 
-function log_repl((@nospecialize f), parameters)
-    background = parameters.background
+function log_repl(f, p::Parameters)
+    background = p.background
 
     if background
         sleep(0.001)
@@ -49,7 +51,7 @@ function log_repl((@nospecialize f), parameters)
     end
 end
 
-function round_time(x)
+function round_time(x::Float64)
     whole, fraction = split(string(max(0.0, round(x; digits = 4))), '.')
     whole * '.' * rpad(fraction, 4, '0')
 end
@@ -61,8 +63,8 @@ end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'
 
-subtypes!(branches, x::DataType, parameters) = append!(branches,
-    get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)), parameters.subtype_cache, x))
-subtypes!(branches, ::UnionAll, _) = branches
-subtypes!(branches, x::Union, parameters) =
-    append!(branches, get!(() -> uniontypes(x), parameters.union_type_cache, x))
+subtypes!(branches::Vector{Type}, x::DataType, p::Parameters) = append!(branches,
+    get!(() -> filter!(subtype -> !(x <: subtype), subtypes(x)), p.subtype_cache, x))
+subtypes!(branches::Vector{Type}, ::UnionAll, ::Parameters) = branches
+subtypes!(branches::Vector{Type}, x::Union, p::Parameters) =
+    append!(branches, get!(() -> uniontypes(x), p.union_type_cache, x))
