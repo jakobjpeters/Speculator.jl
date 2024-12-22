@@ -58,9 +58,9 @@ function round_time(x::Float64)
     whole * '.' * rpad(fraction, 4, '0')
 end
 
-function signature(x, types)
+function signature(x, parameter_types)
     @nospecialize
-    signature(x) * '(' * join(map(type -> "::" * string(type), types), ", ") * ')'
+    signature(x) * '(' * join(map(type -> "::" * string(type), parameter_types), ", ") * ')'
 end
 signature(@nospecialize x::Union{Function, Type}) = repr(x)
 signature(@nospecialize ::T) where T = "(::" * repr(T) * ')'

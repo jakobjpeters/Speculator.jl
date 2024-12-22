@@ -61,6 +61,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             end
 
             if !skip
+                caller_type = sig.types[1]
                 dry, generate = p.dry, p.generate
 
                 if !(dry || generate)
@@ -74,7 +75,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                 for compilable_types in product(product_types...)
                     if dry log_debug(found, x, p, compilable_types)
                     else
-                        signature_type = Tuple{Typeof(x), compilable_types...}
+                        signature_type = Tuple{caller_type, compilable_types...}
 
                         if generate
                             if precompile(signature_type)

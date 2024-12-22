@@ -23,7 +23,6 @@ import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length,
 using Base:
     Threads.@spawn, active_project, isvarargtype, mul_with_overflow,
     Iterators.product, specializations, uniontypes, unsorted_names
-using Core: MethodInstance, Typeof
 using InteractiveUtils: subtypes
 using Serialization: serialize
 using Statistics: mean, median
