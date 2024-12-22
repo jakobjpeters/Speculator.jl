@@ -5,6 +5,7 @@ end
 
 function (is::InputSpeculator)(@nospecialize x)
     _x = gensym()
+
     quote
         $_x = $x
         $speculate($_x; $(is.parameters)...)
@@ -65,10 +66,15 @@ function speculate_repl(install::Bool = true; background::Bool = true, parameter
         ast_transforms = Base.active_repl_backend.ast_transforms
         filter!(ast_transform -> !(ast_transform isa InputSpeculator), ast_transforms)
 
-        s = if install
-            push!(ast_transforms, InputSpeculator(merge((background = background,), parameters)))
-            ""
-        else " not"
+        s = begin
+            if install
+                push!(
+                    ast_transforms,
+                    InputSpeculator(merge((background = background,), parameters))
+                )
+                ""
+            else " not"
+            end
         end
 
         @info "The REPL will$s call `speculate` with each input"

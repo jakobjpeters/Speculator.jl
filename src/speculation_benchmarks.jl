@@ -53,9 +53,13 @@ struct SpeculationBenchmark
         serialize(data_path, (predicate, x, maximum_methods))
 
         for _ in 1:samples
-            run(Cmd(["julia", "--project=$(active_project())", "--eval",
+            run(Cmd([
+                "julia",
+                "--project=$(active_project())", "--eval",
                 "include(\"$(dirname(dirname((@__FILE__))))/scripts/trials.jl\")",
-            data_path, time_path]))
+                data_path,
+                time_path
+            ]))
             push!(times, read(time_path, Float64))
         end
 
@@ -81,10 +85,10 @@ lastindex(pb::SpeculationBenchmark) = lastindex(pb.times)
 
 length(pb::SpeculationBenchmark) = length(pb.times)
 
-function show(io::IO, ::MIME"text/plain", pb::SpeculationBenchmark)
-    println(io, "Precompilation benchmark with `$(length(pb))` samples:")
-    println(io, "  Mean:    `$(round_time(mean(pb)))`")
-    println(io, "  Median:  `$(round_time(median(pb)))`")
-    println(io, "  Minimum: `$(round_time(minimum(pb)))`")
-    print(io, "  Maximum: `$(round_time(maximum(pb)))`")
-end
+show(io::IO, ::MIME"text/plain", pb::SpeculationBenchmark) = join(io, [
+    "Precompilation benchmark with `$(length(pb))` samples:",
+    "  Mean:    `$(round_time(mean(pb)))`",
+    "  Median  `$(round_time(median(pb)))`",
+    "  Minimum: `$(round_time(minimum(pb)))`",
+    "  Maximum: `$(round_time(maximum(pb)))`"
+], '\n')

@@ -1,5 +1,10 @@
 
-precompile_method((@nospecialize x), p::Parameters, _specializations::Union{Vector{DataType}, Vector{Any}}, (@nospecialize types)) =
+function precompile_method(
+    (@nospecialize x),
+    p::Parameters,
+    _specializations::Union{Vector{DataType}, Vector{Any}},
+    (@nospecialize types)
+)
     if p.dry log_debug(found, x, p, types)
     else
         signature_types = Tuple{Typeof(x), types...}
@@ -17,8 +22,9 @@ precompile_method((@nospecialize x), p::Parameters, _specializations::Union{Vect
             ), p)
         end
     end
+end
 
-precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType) =
+function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
     if !(m.module == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
 
@@ -47,7 +53,8 @@ precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType) =
                                 if isconcretetype(branch)
                                     if p.predicate(branch)
                                         push!(new_leaves, branch)
-                                        (new_flag = new_flag || length(new_leaves) > maximum_methods) && break
+                                        new_flag = new_flag || length(new_leaves) > maximum_methods
+                                        new_flag && break
                                     end
                                 else subtypes!(branches, branch, p)
                                 end
@@ -56,12 +63,11 @@ precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType) =
                             new_leaves => new_flag
                         end
 
-                        flag || begin
-                            flag = isempty(leaves) || begin
-                                count, overflow = mul_with_overflow(count, length(leaves))
-                                flag = overflow || count > maximum_methods
-                            end
-                        end ? break : leaves
+                        flag = flag || isempty(leaves) || begin
+                            count, overflow = mul_with_overflow(count, length(leaves))
+                            overflow || count > maximum_methods
+                        end
+                        flag ? break : leaves
                     end
                 )
             end
@@ -76,6 +82,7 @@ precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType) =
             end
         end
     end
+end
 precompile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
 search(x::Module, p::Parameters) = for name in names(x; all = true)
@@ -117,8 +124,10 @@ function log_review((@nospecialize x), p::Parameters)
 
             if dry @info "Found `$(counters[found])`$s"
             else
-                _precompiled, _skipped, _warned =
-                    map(s -> counters[s], [precompiled, skipped, warned])
+                _precompiled, _skipped, _warned = map(
+                    s -> counters[s],
+                    [precompiled, skipped, warned]
+                )
                 @info "Precompiled `$_precompiled`, skipped `$_skipped`, and warned `$_warned`$s"
             end
         end
@@ -193,6 +202,7 @@ function speculate(predicate, x;
     @nospecialize
     maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
     generate = !(dry || isempty(path))
+
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(
             background && isinteractive(),
@@ -208,6 +218,7 @@ function speculate(predicate, x;
             IdDict{Union, Vector{Any}}(),
             verbosity,
         )
+
         background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
         nothing
     end
