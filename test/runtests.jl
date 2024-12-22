@@ -1,5 +1,7 @@
 
-using ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
+using Aqua, ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
+
+Aqua.test_all(Speculator)
 
 @testset "ExplicitImports.jl" begin
     for f in [
