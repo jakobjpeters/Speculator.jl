@@ -136,6 +136,10 @@ which may be useful if there are new methods to precompile.
 
 The [`all_modules`](@ref) value ... .
 
+!!! info
+    This function only runs when called during precompilation or an interactive session,
+    or when writing precompilation directives to a file.
+
 # Keyword parameters
 
 - `background::Bool = false`:
@@ -192,27 +196,29 @@ function speculate(predicate, x;
     verbosity::Verbosity = warn
 )
     @nospecialize
-    maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
     generate = !(dry || isempty(path))
+    if generate || isinteractive() || (@ccall jl_generating_output()::Cint) == 1
+        maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
 
-    open(generate ? path : tempname(); write = true) do file
-        parameters = Parameters(
-            background && isinteractive(),
-            Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
-            dry,
-            file,
-            generate,
-            maximum_methods,
-            predicate,
-            IdDict{Type, Pair{Vector{Type}, Bool}}(),
-            IdSet{Any}(),
-            IdDict{DataType, Vector{Any}}(),
-            IdDict{Union, Vector{Any}}(),
-            verbosity,
-        )
+        open(generate ? path : tempname(); write = true) do file
+            parameters = Parameters(
+                background && isinteractive(),
+                Dict(map(o -> o => 0, dry ? [found] : [skipped, precompiled, warned])),
+                dry,
+                file,
+                generate,
+                maximum_methods,
+                predicate,
+                IdDict{Type, Pair{Vector{Type}, Bool}}(),
+                IdSet{Any}(),
+                IdDict{DataType, Vector{Any}}(),
+                IdDict{Union, Vector{Any}}(),
+                verbosity,
+            )
 
-        background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
-        nothing
+            background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
+            nothing
+        end
     end
 end
 function speculate(x; parameters...)

@@ -60,8 +60,6 @@ export
     AllModules, SpeculationBenchmark, Target, Verbosity,
     all_modules, debug, review, silent, speculate_repl, speculate, warn
 
-if (@ccall jl_generating_output()::Cint) == 1
-    speculate((_, name) -> name != :all_modules, Speculator; maximum_methods = 4)
-end
+speculate((_, name) -> name != :all_modules, Speculator; maximum_methods = 4)
 
 end # Speculator
