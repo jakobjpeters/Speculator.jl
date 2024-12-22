@@ -1,30 +1,45 @@
 
 using ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
 
-for f in [
-    check_no_implicit_imports,
-    check_all_explicit_imports_via_owners,
-    check_no_stale_explicit_imports,
-    check_all_qualified_accesses_via_owners,
-    check_no_self_qualified_accesses
-]
-    @test isnothing(f(Speculator))
+@testset "ExplicitImports.jl" begin
+    for f in [
+        check_no_implicit_imports,
+        check_all_explicit_imports_via_owners,
+        check_no_stale_explicit_imports,
+        check_all_qualified_accesses_via_owners,
+        check_no_self_qualified_accesses
+    ]
+        @test isnothing(f(Speculator))
+    end
+
+    @test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
+        :MethodList,
+        :TypeofBottom,
+        :Typeof,
+        :isvarargtype,
+        :mul_with_overflow,
+        :specializations,
+        :typename,
+        :uniontypes,
+        :unsorted_names
+    )))
+    @test isnothing(check_all_qualified_accesses_are_public(Speculator; ignore = (
+        :active_repl, :active_repl_backend
+    )))
 end
 
-@test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
-    :MethodList,
-    :TypeofBottom,
-    :isvarargtype,
-    :mul_with_overflow,
-    :specializations,
-    :typename,
-    :uniontypes,
-    :unsorted_names
-)))
-@test isnothing(check_all_qualified_accesses_are_public(Speculator; ignore = (
-    :active_repl,
-    :active_repl_backend
-)))
+@testset "`Verbosity`" begin
+    verbosities = [debug, review, silent, warn]
+    combined_verbosities = reduce(|, verbosities)
+    @test string(combined_verbosities) == "(debug | review | warn)::Verbosity"
+    @test combined_verbosities == debug | review | warn
+    @test combined_verbosities.value == 7
+    @test all(v -> v ⊆ v, verbosities)
+    @test all(v -> silent ⊆ v, verbosities)
+    @test all(((v, n),) -> string(v) == n * "::Verbosity", [
+        debug => "debug", review => "review", warn => "warn"
+    ])
+end
 
 function count_methods(predicate, value; parameters...)
     path = tempname()
@@ -32,8 +47,7 @@ function count_methods(predicate, value; parameters...)
     length(readlines(path))
 end
 count_methods(value; parameters...) = count_methods(
-    Speculator.default_predicate,
-    value;
+    Speculator.default_predicate, value;
 parameters...)
 
 speculator_count = count_methods(Base)

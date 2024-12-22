@@ -26,12 +26,7 @@ const sleep_duration = 0.01
 
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
-function log_debug(
-    p::Parameters,
-    c::Counter,
-    caller_type::Type,
-    (@nospecialize caller_types)
-)
+function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize caller_types))
     p.counters[c] += 1
 
     if debug ⊆ p.verbosity
@@ -79,12 +74,9 @@ signature(caller_type::UnionAll) = "(::" * repr(caller_type) * ')'
 signature(caller_type::Union{Union, TypeofBottom}) = repr(caller_type)
 
 subtypes!(abstract_types::Vector{Type}, x::DataType, p::Parameters) = append!(abstract_types, get!(
-    () -> filter!(subtype -> !(x <: subtype), subtypes(x)),
-    p.subtype_cache,
-    x
+    () -> filter!(subtype -> !(x <: subtype), subtypes(x)), p.subtype_cache, x
 ))
 subtypes!(abstract_types::Vector{Type}, ::UnionAll, ::Parameters) = abstract_types
 subtypes!(abstract_types::Vector{Type}, x::Union, p::Parameters) = append!(
-    abstract_types,
-    get!(() -> uniontypes(x), p.union_type_cache, x)
+    abstract_types, get!(() -> uniontypes(x), p.union_type_cache, x)
 )

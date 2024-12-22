@@ -45,12 +45,9 @@ julia> g(::Union{String, Symbol}) = nothing;
 ```
 """
 function speculate_repl(
-    predicate = default_predicate,
-    install::Bool = true;
-    background::Bool = true,
+    predicate = default_predicate, install::Bool = true; background::Bool = true,
 parameters...)
     @nospecialize
-
     if isinteractive()
         ast_transforms = Base.active_repl_backend.ast_transforms
         filter!(ast_transform -> !(ast_transform isa InputSpeculator), ast_transforms)

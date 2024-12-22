@@ -1,9 +1,5 @@
 
-function log_warn(
-    p::Parameters,
-    caller_type::Type,
-    (@nospecialize compilable_types)
-)
+function log_warn(p::Parameters, caller_type::Type, (@nospecialize compilable_types))
     if warn ⊆ p.verbosity
         _signature = signature(caller_type, compilable_types)
         p.counters[warned] += 1
@@ -52,8 +48,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
 
                         skip = skip || begin
                             count, overflow = mul_with_overflow(
-                                count,
-                                length(new_compilable_types)
+                                count, length(new_compilable_types)
                             )
                             overflow || count > limit
                         end
@@ -132,8 +127,7 @@ function log_review((@nospecialize x), p::Parameters)
             if p.dry @info "$header"
             else
                 _compiled, _skipped, _warned = map(
-                    s -> counters[s],
-                    [compiled, skipped, warned]
+                    s -> counters[s], [compiled, skipped, warned]
                 )
                 @info "$header\nCompiled   `$_compiled`\nSkipped    `$_skipped`\nWarned     `$_warned`"
             end
@@ -142,14 +136,7 @@ function log_review((@nospecialize x), p::Parameters)
 end
 
 function initialize_parameters(
-    (@nospecialize x),
-    background,
-    dry,
-    generate,
-    limit,
-    path,
-    predicate,
-    verbosity
+    (@nospecialize x), background, dry, generate, limit, path, predicate, verbosity
 )
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(

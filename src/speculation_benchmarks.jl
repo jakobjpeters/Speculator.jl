@@ -45,10 +45,7 @@ struct SpeculationBenchmark
     times::Vector{Float64}
 
     function SpeculationBenchmark(
-        predicate,
-        x,
-        samples::Integer = default_samples;
-        limit = default_limit
+        predicate, x, samples::Integer = default_samples; limit = default_limit
     )
         @nospecialize
 
@@ -95,7 +92,11 @@ function show(io::IO, ::MIME"text/plain", sb::SpeculationBenchmark)
     times = sb.times
     samples = length(times)
     i = (samples + 1) ÷ 2
-    median = isodd(samples) ? partialsort(times, i) : sum(partialsort(times, i:(i + 1))) / 2
+    median = begin
+        if isodd(samples) partialsort(times, i)
+        else sum(partialsort(times, i:(i + 1))) / 2
+        end
+    end
 
     join(io, [
         "Precompilation benchmark with `$samples` samples:",
