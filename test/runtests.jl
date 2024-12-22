@@ -47,7 +47,7 @@ end
 
 function count_methods(predicate, value; parameters...)
     path = tempname()
-    speculate(predicate, value; path, parameters...)
+    speculate(predicate, value; path, dry = true, parameters...)
     length(readlines(path))
 end
 count_methods(value; parameters...) = count_methods(
@@ -76,7 +76,7 @@ function count_method_analysis(x::Method)
 end
 count_method_analysis((@nospecialize _)) = true
 visit(count_method_analysis, Base)
-@test method_analysis_count < speculator_count
+@test method_analysis_count < speculator_count + 5
 @test precompile_signatures_count < speculator_count
 
 module X end

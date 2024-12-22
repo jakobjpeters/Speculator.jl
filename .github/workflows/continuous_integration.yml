@@ -43,8 +43,6 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
-        if: ${{ env.COVERAGE }}
-      - uses: codecov/codecov-action@v4
-        if: ${{ env.COVERAGE }}
-        with:
-          files: lcov.info
+      - uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
