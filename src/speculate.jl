@@ -51,11 +51,8 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
                                 branch = pop!(branches)
 
                                 if isconcretetype(branch)
-                                    if p.predicate(parentmodule(m), branch)
-                                        push!(new_leaves, branch)
-                                        new_flag = new_flag || length(new_leaves) > limit
-                                        new_flag && break
-                                    end
+                                    push!(new_leaves, branch)
+                                    (new_flag = new_flag || length(new_leaves) > limit) && break
                                 else subtypes!(branches, branch, p)
                                 end
                             end
