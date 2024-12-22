@@ -92,8 +92,8 @@ length(pb::SpeculationBenchmark) = length(pb.times)
 
 show(io::IO, ::MIME"text/plain", pb::SpeculationBenchmark) = join(io, [
     "Precompilation benchmark with `$(length(pb))` samples:",
-    "  Mean:    `$(round_time(mean(pb)))`",
-    "  Median  `$(round_time(median(pb)))`",
-    "  Minimum: `$(round_time(minimum(pb)))`",
-    "  Maximum: `$(round_time(maximum(pb)))`"
+    "  Mean:      `$(round_time(mean(pb)))`",
+    "  Median     `$(round_time(median(pb)))`",
+    "  Minimum:   `$(round_time(minimum(pb)))`",
+    "  Maximum:   `$(round_time(maximum(pb)))`"
 ], '\n')

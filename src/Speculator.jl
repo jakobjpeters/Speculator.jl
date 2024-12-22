@@ -7,7 +7,6 @@ TODO: plot number of methods vs `limit`
 TODO: rename `speculate_repl` to `speculate_interactive`?
 TODO: tutorial to create a system image?
 TODO: document skipping methods that are already specialized
-TODO: improve the `review` log
 TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
     - `speculate(Base; dry = true)`
     - `length(PrecompileSignatures.precompilables(Base))`
@@ -16,8 +15,7 @@ TODO: document time to search for every possible method:
 TODO: figure out how `julia --trace-compile=precompile.jl` works
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
-TODO: remove closures, because they are not precompilable
-TODO: count generic methods
+TODO: remove closures, because they can't be precompiled?
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show

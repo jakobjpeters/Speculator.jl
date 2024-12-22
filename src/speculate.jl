@@ -77,20 +77,21 @@ function compile_methods(p::Parameters, m::Method, sig::DataType)
                 end
 
                 for compilable_types in product(product_types...)
-                    if dry log_debug(p, found, caller_type, compilable_types)
+                    if dry log_debug(p, generated, caller_type, compilable_types)
                     else
                         signature_type = Tuple{caller_type, compilable_types...}
+                        p.counters[generated] += 1
 
                         if generate
                             if precompile(signature_type)
-                                log_debug(p, generated, caller_type, compilable_types)
+                                log_debug(p, compiled, caller_type, compilable_types)
                                 println(p.file, "precompile(", signature_type, ')')
                             else log_warn(p, caller_type, compilable_types)
                             end
                         elseif any(==(signature_type), specialization_types)
                             log_debug(p, skipped, caller_type, compilable_types)
                         elseif precompile(signature_type)
-                            log_debug(p, precompiled, caller_type, compilable_types)
+                            log_debug(p, compiled, caller_type, compilable_types)
                         else log_warn(p, caller_type, compilable_types)
                         end
                     end
@@ -102,6 +103,7 @@ end
 compile_methods(::Parameters, ::Method, ::UnionAll) = nothing
 
 search(x::MethodList, p::Parameters) = for method in x
+    p.counters[generic] += 1
     search(method, p)
 end
 search(x::Method, p::Parameters) = compile_methods(p, x, x.sig)
@@ -124,18 +126,18 @@ function log_review((@nospecialize x), p::Parameters)
     if review ⊆ p.verbosity
         log_repl(p) do
             counters = p.counters
-            dry = p.dry
+            _generated = counters[generated]
+            _generic = counters[generic]
             seconds = round_time(elapsed)
-            values = length(p.searched)
-            s = " methods from `$values` value$(values == 1 ? "" : "s") in `$seconds` seconds"
+            header = "Generated `$_generated` methods from `$_generic` generic methods in `$seconds` seconds"
 
-            if dry @info "Found `$(counters[found])`$s"
+            if p.dry @info "$header"
             else
-                _precompiled, _skipped, _warned = map(
+                _compiled, _skipped, _warned = map(
                     s -> counters[s],
-                    [precompiled, skipped, warned]
+                    [compiled, skipped, warned]
                 )
-                @info "Precompiled `$_precompiled`, skipped `$_skipped`, and warned `$_warned`$s"
+                @info "$header\nCompiled   `$_compiled`\nSkipped    `$_skipped`\nWarned     `$_warned`"
             end
         end
     end
@@ -239,7 +241,7 @@ function speculate(predicate, value;
         open(generate ? path : tempname(); write = true) do file
             parameters = Parameters(
                 background && isinteractive(),
-                Dict(map(o -> o => 0, dry ? [found] : [generated, skipped, precompiled, warned])),
+                Dict(map(o -> o => 0, [compiled, generated, generic, skipped, warned])),
                 dry,
                 file,
                 generate,
