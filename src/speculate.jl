@@ -143,6 +143,38 @@ function log_review((@nospecialize x), p::Parameters)
     end
 end
 
+function initialize_parameters(
+    (@nospecialize x),
+    background,
+    dry,
+    generate,
+    limit,
+    path,
+    predicate,
+    verbosity
+)
+    open(generate ? path : tempname(); write = true) do file
+        parameters = Parameters(
+            background && isinteractive(),
+            Dict(map(o -> o => 0, [compiled, generated, generic, skipped, warned])),
+            dry,
+            file,
+            generate,
+            limit,
+            predicate,
+            IdDict{Type, Pair{Vector{Type}, Bool}}(),
+            IdSet{Any}(),
+            IdDict{DataType, Vector{Any}}(),
+            IdDict{Union, Vector{Any}}(),
+            verbosity,
+        )
+
+        background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
+        nothing
+    end
+end
+
+
 """
     speculate(predicate = $default_predicate, value; parameters...)
 
@@ -186,7 +218,7 @@ To benchmark the compilation time of a workload, see also [`SpeculationBenchmark
     a call to `sleep($sleep_duration)` is used to keep the REPL prompt active.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.
-    This is useful for testing workloads with `verbosity = debug` and in `time_precompilation`.
+    This is useful for testing workloads with `verbosity = debug`.
     Methods that have already been specialized are skipped.
     Note that `dry` must be `false` to save the workload to a file with the `path` parameter.
 - `limit::Integer = $default_limit`:
@@ -238,25 +270,7 @@ function speculate(predicate, value;
     limit > 0 || error("The `limit` must be greater than `0`")
     generate = !(dry || isempty(path))
     if generate || isinteractive() || (@ccall jl_generating_output()::Cint) == 1
-        open(generate ? path : tempname(); write = true) do file
-            parameters = Parameters(
-                background && isinteractive(),
-                Dict(map(o -> o => 0, [compiled, generated, generic, skipped, warned])),
-                dry,
-                file,
-                generate,
-                limit,
-                predicate,
-                IdDict{Type, Pair{Vector{Type}, Bool}}(),
-                IdSet{Any}(),
-                IdDict{DataType, Vector{Any}}(),
-                IdDict{Union, Vector{Any}}(),
-                verbosity,
-            )
-
-            background ? (@spawn log_review(value, parameters)) : log_review(value, parameters)
-            nothing
-        end
+        initialize_parameters(value, background, dry, generate, limit, path, predicate, verbosity)
     end
 end
 function speculate(x; parameters...)

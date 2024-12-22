@@ -75,3 +75,5 @@ julia> speculate(string; verbosity = debug)
 [ Info: Skipped `string(::Base.UUID)`
 ...
 =#
+
+# `include("scripts/trial.jl")`

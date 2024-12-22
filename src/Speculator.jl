@@ -3,6 +3,9 @@ module Speculator
 
 #=
 BUG: `speculate_repl(; verbosity = review)` fails to handle the terminal text sometimes
+BUG: catch possible error in `scripts/trials.jl` with `add`
+TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl
+    https://github.com/JuliaLang/PrecompileTools.jl/issues/28
 TODO: plot number of methods vs `limit`
 TODO: rename `speculate_repl` to `speculate_interactive`?
 TODO: tutorial to create a system image?
@@ -25,7 +28,6 @@ using Base:
 using Core: TypeofBottom
 using InteractiveUtils: subtypes
 using Serialization: serialize
-using Statistics: mean, median
 using REPL: LineEdit.refresh_line
 
 for path in [

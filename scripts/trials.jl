@@ -2,7 +2,7 @@
 using Base: find_package
 using Pkg: PackageSpec, add
 using Serialization: deserialize
-using Speculator: silent, speculate
+using Speculator: initialize_parameters, silent
 
 load_data(path) =
     try deserialize(path)
@@ -12,7 +12,6 @@ load_data(path) =
             name = key.name
 
             redirect_stderr(devnull) do
-                # TODO: catch error in `add`
                 isnothing(find_package(name)) && add(PackageSpec(name, key.uuid))
                 @eval using $(Symbol(name))
             end
@@ -24,7 +23,7 @@ load_data(path) =
 const data_path, time_path = ARGS
 const predicate, x, limit = load_data(data_path)
 
-trial(dry) = @elapsed speculate(predicate, x; dry, limit, verbosity = silent)
+trial(dry) = @elapsed initialize_parameters(x, false, dry, false, limit, "", predicate, silent)
 
 trial(true)
-write(time_path, trial(false) - trial(false))
+write(time_path, max(0, trial(false) - trial(false)))

@@ -58,13 +58,14 @@ struct SpeculationBenchmark
         serialize(data_path, (predicate, x, limit))
 
         for _ in 1:samples
-            run(Cmd([
+            process = run(Cmd([
                 "julia",
                 "--project=$(active_project())", "--eval",
                 "include(\"$(dirname(dirname((@__FILE__))))/scripts/trials.jl\")",
                 data_path,
                 time_path
             ]))
+            success(process) || error("The speculation benchmark failed")
             push!(times, read(time_path, Float64))
         end
 
@@ -79,21 +80,28 @@ end
 
 eltype(::Type{SpeculationBenchmark}) = Float64
 
-firstindex(pb::SpeculationBenchmark) = firstindex(pb.times)
+firstindex(sb::SpeculationBenchmark) = firstindex(sb.times)
 
-getindex(pb::SpeculationBenchmark, i::Integer) = getindex(pb.times, i)
+getindex(sb::SpeculationBenchmark, i::Integer) = getindex(sb.times, i)
 
-iterate(pb::SpeculationBenchmark, i::Integer) = iterate(pb.times, i)
-iterate(pb::SpeculationBenchmark) = iterate(pb.times)
+iterate(sb::SpeculationBenchmark, i::Integer) = iterate(sb.times, i)
+iterate(sb::SpeculationBenchmark) = iterate(sb.times)
 
-lastindex(pb::SpeculationBenchmark) = lastindex(pb.times)
+lastindex(sb::SpeculationBenchmark) = lastindex(sb.times)
 
-length(pb::SpeculationBenchmark) = length(pb.times)
+length(sb::SpeculationBenchmark) = length(sb.times)
 
-show(io::IO, ::MIME"text/plain", pb::SpeculationBenchmark) = join(io, [
-    "Precompilation benchmark with `$(length(pb))` samples:",
-    "  Mean:      `$(round_time(mean(pb)))`",
-    "  Median     `$(round_time(median(pb)))`",
-    "  Minimum:   `$(round_time(minimum(pb)))`",
-    "  Maximum:   `$(round_time(maximum(pb)))`"
-], '\n')
+function show(io::IO, ::MIME"text/plain", sb::SpeculationBenchmark)
+    times = sb.times
+    samples = length(times)
+    i = (samples + 1) ÷ 2
+    median = isodd(samples) ? partialsort(times, i) : sum(partialsort(times, i:(i + 1))) / 2
+
+    join(io, [
+        "Precompilation benchmark with `$samples` samples:",
+        "  Mean:      `$(round_time(sum(times) / samples))`",
+        "  Median     `$(round_time(median))`",
+        "  Minimum:   `$(round_time(minimum(times)))`",
+        "  Maximum:   `$(round_time(maximum(times)))`"
+    ], '\n')
+end
