@@ -51,7 +51,7 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
                                 branch = pop!(branches)
 
                                 if isconcretetype(branch)
-                                    if p.predicate(branch)
+                                    if p.predicate(parentmodule(m), branch)
                                         push!(new_leaves, branch)
                                         new_flag = new_flag || length(new_leaves) > maximum_methods
                                         new_flag && break
@@ -86,33 +86,25 @@ end
 precompile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
 search(x::Module, p::Parameters) = for name in names(x; all = true)
-    isdefined(x, name) && check_searched(getproperty(x, name), p)
-end
-search((@nospecialize x), ::Parameters) = nothing
+    if isdefined(x, name) && p.predicate(x, name)
+        searched = p.searched
+        _x = getproperty(x, name)
 
-function check_searched((@nospecialize x), p::Parameters)
-    searched = p.searched
-
-    if x ∉ searched
-        push!(searched, x)
-
-        if p.predicate(x)
-            search(x, p)
-
-            for method in methods(x)
-                precompile_methods(x, p, method, method.sig)
-            end
+        if _x ∉ searched
+            push!(searched, _x)
+            search(_x, p)
         end
     end
 end
-
-handle_input((@nospecialize x), p::Parameters) = check_searched(x, p)
-handle_input(::AllModules, p::Parameters) = for _module in loaded_modules_array()
-    check_searched(_module, p)
+search(::AllModules, p::Parameters) = for m in loaded_modules_array()
+    search(m, p)
+end
+search((@nospecialize x), p::Parameters) = for method in methods(x)
+    precompile_methods(x, p, method, method.sig)
 end
 
 function log_review((@nospecialize x), p::Parameters)
-    elapsed = @elapsed handle_input(x, p)
+    elapsed = @elapsed search(x, p)
 
     if review ⊆ p.verbosity
         log_repl(p) do
