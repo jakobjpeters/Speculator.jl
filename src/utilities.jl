@@ -1,11 +1,7 @@
 
-const default_limit = 1
-
-const default_predicate = Returns(true)
-
-const default_samples = 8
-
 @enum Counter found skipped precompiled warned
+
+struct AllModules end
 
 struct Parameters
     background::Bool
@@ -21,6 +17,12 @@ struct Parameters
     union_type_cache::IdDict{Union, Vector{Any}}
     verbosity::Verbosity
 end
+
+const default_limit = 1
+
+const default_predicate = Returns(true)
+
+const default_samples = 8
 
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 

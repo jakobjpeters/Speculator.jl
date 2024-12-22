@@ -97,9 +97,6 @@ search(x::Module, p::Parameters) = for name in names(x; all = true)
         end
     end
 end
-search(::AllModules, p::Parameters) = for m in loaded_modules_array()
-    search(m, p)
-end
 search((@nospecialize x), p::Parameters) = for method in methods(x)
     precompile_methods(x, p, method, method.sig)
 end
@@ -134,8 +131,6 @@ Generate and `precompile` a workload.
 
 This function can be called repeatedly with the same value,
 which may be useful if there are new methods to precompile.
-
-The [`all_modules`](@ref) value ... .
 
 !!! info
     This function only runs when called during precompilation or an interactive session,

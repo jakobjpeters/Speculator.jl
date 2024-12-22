@@ -47,7 +47,6 @@ using Statistics: mean, median
 using REPL: LineEdit.refresh_line
 
 for path in [
-    "all_modules.jl",
     "verbosities.jl",
     "utilities.jl",
     "speculation_benchmarks.jl",
@@ -58,9 +57,9 @@ for path in [
 end
 
 export
-    AllModules, SpeculationBenchmark, Target, Verbosity,
-    all_modules, debug, review, silent, speculate_repl, speculate, warn
+    SpeculationBenchmark, Target, Verbosity,
+    debug, review, silent, speculate_repl, speculate, warn
 
-speculate((_, name) -> name != :all_modules, Speculator; limit = 4)
+speculate(Speculator; limit = 4)
 
 end # Speculator
