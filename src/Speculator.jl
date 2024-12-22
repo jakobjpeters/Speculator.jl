@@ -23,22 +23,20 @@ TODO: remove closures, because they can't be precompiled?
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
 using Base:
-    MethodList, Threads.@spawn, active_project, isvarargtype, mul_with_overflow,
-    Iterators.product, specializations, typename, uniontypes, unsorted_names
+    Iterators, Threads, MethodList, active_project, isvarargtype,
+    mul_with_overflow, specializations, uniontypes, unsorted_names
+using .Iterators: product
+using .Threads: @spawn
 using Core: TypeofBottom
 using InteractiveUtils: subtypes
 using Serialization: serialize
 using REPL: LineEdit.refresh_line
 
-for path in [
-    "verbosities.jl",
-    "utilities.jl",
-    "speculation_benchmarks.jl",
-    "speculate.jl",
-    "speculate_repl.jl"
-]
-    include(path)
-end
+include("verbosities.jl")
+include("utilities.jl")
+include("speculation_benchmarks.jl")
+include("speculate.jl")
+include("speculate_repl.jl")
 
 export SpeculationBenchmark, Verbosity, debug, review, silent, warn, speculate_repl, speculate
 
