@@ -14,7 +14,7 @@ function log_warn(
     end
 end
 
-function compile_methods(p::Parameters, m::Method, sig::DataType)
+function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
     if !(parentmodule(m) == Core && Tuple <: sig)
         parameter_types = sig.types[2:end]
 
@@ -65,7 +65,7 @@ function compile_methods(p::Parameters, m::Method, sig::DataType)
             end
 
             if !skip
-                caller_type = sig.types[1]
+                caller_type = Typeof(x)
                 dry, generate = p.dry, p.generate
 
                 if !(dry || generate)
@@ -100,13 +100,8 @@ function compile_methods(p::Parameters, m::Method, sig::DataType)
         end
     end
 end
-compile_methods(::Parameters, ::Method, ::UnionAll) = nothing
+compile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
-search(x::MethodList, p::Parameters) = for method in x
-    p.counters[generic] += 1
-    search(method, p)
-end
-search(x::Method, p::Parameters) = compile_methods(p, x, x.sig)
 search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
     if isdefined(x, name) && p.predicate(x, name)
         searched = p.searched
@@ -118,7 +113,10 @@ search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
         end
     end
 end
-search((@nospecialize x), p::Parameters) = search(methods(x), p)
+search((@nospecialize x), p::Parameters) = for method in methods(x)
+    p.counters[generic] += 1
+    compile_methods(x, p, method, method.sig)
+end
 
 function log_review((@nospecialize x), p::Parameters)
     elapsed = @elapsed search(x, p)

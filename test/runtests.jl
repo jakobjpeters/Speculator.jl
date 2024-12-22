@@ -1,6 +1,31 @@
 
 using ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
 
+for f in [
+    check_no_implicit_imports,
+    check_all_explicit_imports_via_owners,
+    check_no_stale_explicit_imports,
+    check_all_qualified_accesses_via_owners,
+    check_no_self_qualified_accesses
+]
+    @test isnothing(f(Speculator))
+end
+
+@test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
+    :MethodList,
+    :TypeofBottom,
+    :isvarargtype,
+    :mul_with_overflow,
+    :specializations,
+    :typename,
+    :uniontypes,
+    :unsorted_names
+)))
+@test isnothing(check_all_qualified_accesses_are_public(Speculator; ignore = (
+    :active_repl,
+    :active_repl_backend
+)))
+
 function count_methods(predicate, value; parameters...)
     path = tempname()
     speculate(predicate, value; path, parameters...)
@@ -44,10 +69,8 @@ speculate(X; path, dry = true)
 speculate(X; path)
 @test isfile(path)
 
-@test_nowarn speculate(Base; dry = true)
-
 path = tempname()
-speculate(Base; path)
+@test_nowarn speculate(Base; path)
 @test_broken (include(path); true)
 # include(x -> :(@test $x), path)
 
@@ -55,31 +78,6 @@ speculate(Base; path)
 
 @test count_methods(Returns(false)) == 0
 @test count_methods(Returns(false), () -> nothing) == 1
-
-for f in [
-    check_no_implicit_imports,
-    check_all_explicit_imports_via_owners,
-    check_no_stale_explicit_imports,
-    check_all_qualified_accesses_via_owners,
-    check_no_self_qualified_accesses
-]
-    @test isnothing(f(Speculator))
-end
-
-@test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
-    :MethodList,
-    :TypeofBottom,
-    :isvarargtype,
-    :mul_with_overflow,
-    :specializations,
-    :typename,
-    :uniontypes,
-    :unsorted_names
-)))
-@test isnothing(check_all_qualified_accesses_are_public(Speculator; ignore = (
-    :active_repl,
-    :active_repl_backend
-)))
 
 # speculate(Base)
 # count precompiled + skipped
