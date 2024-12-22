@@ -5,3 +5,6 @@ ExplicitImports = "7d51a73a-1435-4ff3-83d9-f097790105c7"
 MethodAnalysis = "85b6ec6f-f7df-4429-9514-a64bcd9ee824"
 PrecompileSignatures = "91cefc8d-f054-46dc-8f8c-26e11d7c5411"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+PrecompileSignatures = "3.0.3"
