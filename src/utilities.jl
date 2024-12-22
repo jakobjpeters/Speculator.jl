@@ -1,5 +1,5 @@
 
-const default_maximum_methods = 1
+const default_limit = 1
 
 const default_predicate = Returns(true)
 
@@ -13,7 +13,7 @@ struct Parameters
     dry::Bool
     file::IOStream
     generate::Bool
-    maximum_methods::Int
+    limit::Int
     predicate
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}}
     searched::IdSet{Any}

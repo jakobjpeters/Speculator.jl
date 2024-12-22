@@ -31,7 +31,7 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
         if isempty(parameter_types) || !isvarargtype(last(parameter_types))
             count = 1
             flag = false
-            maximum_methods = p.maximum_methods
+            limit = p.limit
             no_specialize = m.nospecialize
             product_cache = p.product_cache
             product_types = Vector{Type}[]
@@ -53,7 +53,7 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
                                 if isconcretetype(branch)
                                     if p.predicate(parentmodule(m), branch)
                                         push!(new_leaves, branch)
-                                        new_flag = new_flag || length(new_leaves) > maximum_methods
+                                        new_flag = new_flag || length(new_leaves) > limit
                                         new_flag && break
                                     end
                                 else subtypes!(branches, branch, p)
@@ -65,7 +65,7 @@ function precompile_methods((@nospecialize x), p::Parameters, m::Method, sig::Da
 
                         flag = flag || isempty(leaves) || begin
                             count, overflow = mul_with_overflow(count, length(leaves))
-                            overflow || count > maximum_methods
+                            overflow || count > limit
                         end
                         flag ? break : leaves
                     end
@@ -148,7 +148,7 @@ The [`all_modules`](@ref) value ... .
 - `dry::Bool = false`:
     Specifies whether to actually run `precompile`.
     This is useful for testing workloads and in [`time_precompilation`](@ref).
-- `maximum_methods::Integer = $default_maximum_methods`:
+- `limit::Integer = $default_limit`:
     Specifies the maximum number of concrete methods that are generated from a method signature.
     Values less than `1` will throw an error.
     A value equal to `1` will only use methods where
@@ -191,14 +191,14 @@ julia> speculate(Example;
 function speculate(predicate, x;
     background::Bool = false,
     dry::Bool = false,
-    maximum_methods::Integer = default_maximum_methods,
+    limit::Integer = default_limit,
     path::String = "",
     verbosity::Verbosity = warn
 )
     @nospecialize
     generate = !(dry || isempty(path))
     if generate || isinteractive() || (@ccall jl_generating_output()::Cint) == 1
-        maximum_methods > 0 || error("The `maximum_methods` must be greater than `0`")
+        limit > 0 || error("The `limit` must be greater than `0`")
 
         open(generate ? path : tempname(); write = true) do file
             parameters = Parameters(
@@ -207,7 +207,7 @@ function speculate(predicate, x;
                 dry,
                 file,
                 generate,
-                maximum_methods,
+                limit,
                 predicate,
                 IdDict{Type, Pair{Vector{Type}, Bool}}(),
                 IdSet{Any}(),

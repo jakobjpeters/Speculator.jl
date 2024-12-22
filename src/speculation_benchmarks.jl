@@ -5,7 +5,7 @@
         predicate = $default_predicate,
         ::Any,
         samples::Integer = 8;
-        maximum_methods::Integer = $default_maximum_methods
+        limit::Integer = $default_limit
     )
 
 Benchmark the compilation time saved by the precompilation workload ran by [`speculate`](@ref).
@@ -42,15 +42,19 @@ This type implements the iteration interface and part of the indexing interface.
 struct SpeculationBenchmark
     times::Vector{Float64}
 
-    function SpeculationBenchmark(predicate, x, samples::Integer = default_samples;
-        maximum_methods = default_maximum_methods)
+    function SpeculationBenchmark(
+        predicate,
+        x,
+        samples::Integer = default_samples;
+        limit = default_limit
+    )
         @nospecialize
         @show samples
 
         data_path, time_path = tempname(), tempname()
         times = Float64[]
 
-        serialize(data_path, (predicate, x, maximum_methods))
+        serialize(data_path, (predicate, x, limit))
 
         for _ in 1:samples
             run(Cmd([
