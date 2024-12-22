@@ -22,6 +22,8 @@ const default_predicate = Returns(true)
 
 const default_samples = 8
 
+const sleep_duration = 0.01
+
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
 function log_debug(c::Counter, (@nospecialize x), p::Parameters, (@nospecialize types))
@@ -39,7 +41,7 @@ function log_repl(f, p::Parameters)
     background = p.background
 
     if background
-        sleep(0.001)
+        sleep(sleep_duration)
         print(stderr, "\r\33[K\33[A")
     end
 

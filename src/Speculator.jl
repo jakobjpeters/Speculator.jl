@@ -3,7 +3,8 @@ module Speculator
 
 #=
 BUG: `speculate_repl(; verbosity = review)` fails to handle the terminal text sometimes
-TODO: plot number of methods vs `maximum_methods`
+TODO: plot number of methods vs `limit`
+TODO: rename `speculate_repl` to `speculate_interactive`?
 TODO: tutorial to create a system image?
 TODO: document skipping methods that are already specialized
 TODO: improve the `review` log
@@ -15,6 +16,7 @@ TODO: document time to search for every possible method:
 TODO: figure out how `julia --trace-compile=precompile.jl` works
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
+TODO: remove closures, because they are not precompilable
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show

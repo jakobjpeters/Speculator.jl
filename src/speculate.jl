@@ -173,6 +173,8 @@ To benchmark the compilation time of a workload, see also [`SpeculationBenchmark
 - `background::Bool = false`:
     Specifies whether to precompile on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
+    In an interactive session with `debug` in the `verbosity`,
+    a call to `sleep($sleep_duration)` is used to keep the REPL prompt active.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.
     This is useful for testing workloads with `verbosity = debug` and in `time_precompilation`.

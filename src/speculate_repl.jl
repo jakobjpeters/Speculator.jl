@@ -15,7 +15,11 @@ function (is::InputSpeculator)(@nospecialize x)
 end
 
 """
-    speculate_repl(::Bool = true; background::Bool = true, parameters...)
+    speculate_repl(
+        predicate = $default_predicate,
+        install::Bool = true;
+        background::Bool = true,
+    parameters...)
 
 Call [`speculate`](@ref) on each input in the REPL.
 
