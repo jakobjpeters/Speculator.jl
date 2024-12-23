@@ -1,3 +1,4 @@
+using Base: is_interactive
 
 using Aqua, ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
 
@@ -71,7 +72,7 @@ end
             1,
             Speculator.default_predicate,
             IdDict{Type, Pair{Vector{Type}, Bool}}(),
-            IdSet{Any}(),
+            Base.IdSet{Any}(),
             IdDict{DataType, Vector{Any}}(),
             IdDict{Union, Vector{Any}}(),
             review,
@@ -99,7 +100,7 @@ end
             1,
             Speculator.default_predicate,
             IdDict{Type, Pair{Vector{Type}, Bool}}(),
-            IdSet{Any}(),
+            Base.IdSet{Any}(),
             IdDict{DataType, Vector{Any}}(),
             IdDict{Union, Vector{Any}}(),
             review,
@@ -192,11 +193,13 @@ end
     end
 
     # TODO: test `speculate_repl`
+    # @eval Base is_interactive = true
     # @test_logs (:info, "The REPL will call `speculate` with each input") speculate_repl()
     # @test_logs(
     #     (:info, "The REPL will not call `speculate` with each input"),
     #     speculate_repl(; install = false)
     # )
+    # @eval Base is_interactive = false
 end
 
 function count_methods(predicate, value; parameters...)
