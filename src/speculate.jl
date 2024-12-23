@@ -166,7 +166,8 @@ end
 
 Generate a compilation a workload.
 
-See also [`SpeculationBenchmark`](@ref) and [`speculate`](@ref).
+To run a workload automatically in the REPL, see also [`install_speculator`](@ref).
+To measure the duration of compilation in a workload, see also [`SpeculationBenchmarks`](@ref).
 
 !!! tip
     Use this in a package to reduce latency for its users.

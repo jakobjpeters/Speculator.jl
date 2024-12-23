@@ -17,7 +17,7 @@ and finally `dry = false` to measure the runtime within Speculator.jl.
 The result of a trial, an estimate of the runtime of calls to `precompile` in the workload,
 is the difference between the second and third runs.
 
-See also [`speculate_repl`](@ref) and [`speculate`](@ref).
+See also [`speculate`](@ref).
 
 !!! tip
     Initializing a temporary project and running precompilation

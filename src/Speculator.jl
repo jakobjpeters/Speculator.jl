@@ -40,9 +40,11 @@ include("verbosities.jl")
 include("utilities.jl")
 include("speculation_benchmarks.jl")
 include("speculate.jl")
-include("speculate_repl.jl")
+include("input_speculators.jl")
 
-export SpeculationBenchmark, Verbosity, debug, review, silent, warn, speculate_repl, speculate
+export
+    SpeculationBenchmark, Verbosity,
+    debug, review, silent, warn, install_speculator, speculate, uninstall_speculator
 
 speculate(Speculator; limit = 4)
 

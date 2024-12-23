@@ -1,13 +1,16 @@
 
 # References
 
+## Speculative Compilation
+
 ```@docs
 SpeculationBenchmark
-speculate_repl
+install_speculator
 speculate
+uninstall_speculator
 ```
 
-## `Verbosity`
+### Verbosities
 
 ```@docs
 Verbosity
