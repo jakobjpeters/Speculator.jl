@@ -20,6 +20,7 @@ TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?
 TODO: check this package works in notebooks
+TODO: rename `dry`?
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show

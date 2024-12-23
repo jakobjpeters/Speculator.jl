@@ -23,7 +23,9 @@ end
 const data_path, time_path = ARGS
 const predicate, x, limit = load_data(data_path)
 
-trial(dry) = @elapsed initialize_parameters(x, false, dry, false, limit, "", predicate, silent)
+trial(dry) = @elapsed initialize_parameters(
+    x, false, dry, false, false, limit, "", predicate, silent
+)
 
 trial(true)
 write(time_path, max(0, trial(false) - trial(false)))

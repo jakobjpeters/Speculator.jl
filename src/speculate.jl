@@ -136,11 +136,11 @@ function log_review((@nospecialize x), p::Parameters)
 end
 
 function initialize_parameters(
-    (@nospecialize x), background, dry, generate, limit, path, predicate, verbosity
+    (@nospecialize x), background, dry, generate, is_interactive, limit, path, predicate, verbosity
 )
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(
-            background && isinteractive(),
+            background && is_interactive,
             Dict(map(o -> o => 0, [compiled, generated, generic, skipped, warned])),
             dry,
             file,
@@ -253,9 +253,14 @@ function speculate(predicate, value;
 )
     @nospecialize
     limit > 0 || error("The `limit` must be greater than `0`")
+
+    is_interactive = isinteractive()
     generate = !(dry || isempty(path))
-    if generate || isinteractive() || (@ccall jl_generating_output()::Cint) == 1
-        initialize_parameters(value, background, dry, generate, limit, path, predicate, verbosity)
+
+    if generate || is_interactive || (@ccall jl_generating_output()::Cint) == 1
+        initialize_parameters(
+            value, background, dry, generate, is_interactive, limit, path, predicate, verbosity
+        )
     end
 end
 function speculate(x; parameters...)

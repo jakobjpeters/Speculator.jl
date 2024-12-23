@@ -42,14 +42,91 @@ end
 @testset "`Verbosity`" begin
     verbosities = [debug, review, silent, warn]
     combined_verbosities = reduce(|, verbosities)
+
     @test string(combined_verbosities) == "(debug | review | warn)::Verbosity"
     @test combined_verbosities == debug | review | warn
+    @test combined_verbosities ⊆ debug | review | warn
     @test combined_verbosities.value == 7
     @test all(v -> v ⊆ v, verbosities)
     @test all(v -> silent ⊆ v, verbosities)
     @test all(((v, n),) -> string(v) == n * "::Verbosity", [
         debug => "debug", review => "review", silent => "silent", warn => "warn"
     ])
+end
+
+@testset "`log_review`" begin
+    open(tempname(); write = true) do file
+        p = Speculator.Parameters(
+            false,
+            Dict(map(o -> o => 0, [
+                Speculator.compiled,
+                Speculator.generated,
+                Speculator.generic,
+                Speculator.skipped,
+                Speculator.warned
+            ])),
+            true,
+            file,
+            false,
+            1,
+            Speculator.default_predicate,
+            IdDict{Type, Pair{Vector{Type}, Bool}}(),
+            IdSet{Any}(),
+            IdDict{DataType, Vector{Any}}(),
+            IdDict{Union, Vector{Any}}(),
+            review,
+        )
+
+        @test_logs (
+            :info,
+            r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds$"
+        ) Speculator.log_review(nothing, p)
+    end
+
+    open(tempname(); write = true) do file
+        p = Speculator.Parameters(
+            false,
+            Dict(map(o -> o => 0, [
+                Speculator.compiled,
+                Speculator.generated,
+                Speculator.generic,
+                Speculator.skipped,
+                Speculator.warned
+            ])),
+            false,
+            file,
+            false,
+            1,
+            Speculator.default_predicate,
+            IdDict{Type, Pair{Vector{Type}, Bool}}(),
+            IdSet{Any}(),
+            IdDict{DataType, Vector{Any}}(),
+            IdDict{Union, Vector{Any}}(),
+            review,
+        )
+
+        @test_logs (
+            :info,
+            r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds\nCompiled   `0`\nSkipped    `0`\nWarned     `0`$"
+        ) Speculator.log_review(nothing, p)
+    end
+end
+
+@testset "`signature`" begin
+    @test Speculator.signature(String, ()) == "(::String)()"
+    @test Speculator.signature(Type{String}, ()) == "String()"
+    @test Speculator.signature(typeof(string), ()) == "string()"
+    @test Speculator.signature(Type{<:AbstractString}, ()) == "(::Type{<:AbstractString})()"
+    @test Speculator.signature(Union{String, LazyString}, ()) == "Union{LazyString, String}()"
+    @test Speculator.signature(Union{}, ()) == "Union{}()"
+    @test Speculator.signature(Nothing, (
+        String,
+        Type{String},
+        typeof(string),
+        Type{<:AbstractString},
+        Union{String, LazyString},
+        Union{}
+    )) == "nothing(::String, ::Type{String}, ::typeof(string), ::Type{<:AbstractString}, ::Union{LazyString, String}, ::Union{})"
 end
 
 @testset "`SpeculationBenchmark`" begin
