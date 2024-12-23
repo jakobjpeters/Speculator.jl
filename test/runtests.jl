@@ -21,8 +21,14 @@ Aqua.test_all(Speculator)
         :MethodList,
         :TypeofBottom,
         :Typeof,
+        :activate,
+        :active_project,
+        :add,
+        :develop,
+        :instantiate,
         :isvarargtype,
         :mul_with_overflow,
+        :resolve,
         :specializations,
         :typename,
         :uniontypes,
@@ -67,16 +73,22 @@ end
     # TODO: test display of mean, median, minimum, and maximum
 end
 
-error()
-
 @testset "`speculate_repl`" begin
     is = Speculator.InputSpeculator((), Returns(true))
-    x = is(nothing)
-    s = string(x)
-    @test isnothing(eval(x))
-    @test !isnothing(match(r"var\"##\d+\" = nothing", s))
-    @test !isnothing(match(r"\(speculate\)\(Returns{Bool}(true), var\"##\d+\"; ()...\)", s))
-    @test !isnothing(match(r"var\"##\d+\"", s))
+    x = Base.remove_linenums!(is(true))
+    lines = split(string(x), '\n')
+
+    @test eval(x)
+
+    for (line, regex) in zip(lines, [
+        r"begin",
+        r" {4}var\"##\d+\" = true",
+        r" {4}\(Speculator.speculate\)\(Returns{Bool}\(true\), var\"##\d+\"; \(\)\.\.\.\)",
+        r" {4}var\"##\d+\"",
+        r"end"
+    ])
+        @test !isnothing(match(regex, line))
+    end
 
     _is = Speculator.InputSpeculator((
         background = true,
@@ -85,15 +97,29 @@ error()
         path = "precompile.jl",
         verbosity = debug | review
     ), Base.isexported)
-    _x = _is(:(module X end))
-    _s = string(_x)
-    @test isnothing(eval(_x)) isa Module
-    @test !isnothing(match(r"var\"##\d+\" = module X", _s))
-    @test !isnothing(match(r"end", _s))
-    @test !isnothing(match(r"\(speculate\)\(Base.isexported, var\"##\d+\"; (background = true, dry = true, limit = 8, path = \"precompile.jl\", verbosity = (debug | review)::Verbosity)...\)", s))
-    @test !isnothing(match(r"var\"##\d+\"", s))
-    @test (speculate_repl(); true)
+    _x = Base.remove_linenums!(_is(:(f() = true)))
+    _lines = split(string(_x), '\n')
+
+    @test eval(_x)()
+
+    for (line, regex) in zip(_lines, [
+        r"begin",
+        r" {4}var\"##\d+\" = \(f\(\) = begin",
+        r" {16}true",
+        r" {12}end\)",
+        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \"precompile.jl\", verbosity = \(debug | review\)::Verbosity\)\.\.\.\)",
+        r" {4}var\"##\d+\"",
+        r"end"
+    ])
+        @test !isnothing(match(regex, line))
+    end
+
     # TODO: test `speculate_repl`
+    # @test_logs (:info, "The REPL will call `speculate` with each input") speculate_repl()
+    # @test_logs(
+    #     (:info, "The REPL will not call `speculate` with each input"),
+    #     speculate_repl(; install = false)
+    # )
 end
 
 function count_methods(predicate, value; parameters...)
@@ -146,6 +172,8 @@ path = tempname()
 
 @test count_methods(Returns(false)) == 0
 @test count_methods(Returns(false), () -> nothing) == 1
+
+rm(path)
 
 # speculate(Base)
 # count precompiled + skipped

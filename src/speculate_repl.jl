@@ -15,10 +15,8 @@ function (is::InputSpeculator)(@nospecialize x)
 end
 
 """
-    speculate_repl(
-        predicate = $default_predicate,
-        install::Bool = true;
-        background::Bool = true,
+    speculate_repl(predicate = $default_predicate;
+        install::Bool = true, background::Bool = true,
     parameters...)
 
 Call [`speculate`](@ref) on each input in the REPL.
@@ -42,10 +40,13 @@ julia> f() = nothing;
 julia> g(::Union{String, Symbol}) = nothing;
 [ Info: Compiled `Main.Example.g(::String)`
 [ Info: Compiled `Main.Example.g(::Symbol)`
+
+julia> speculate_repl(; install = false)
+[ Info: The REPL will not call `speculate` with each input
 ```
 """
-function speculate_repl(
-    predicate = default_predicate, install::Bool = true; background::Bool = true,
+function speculate_repl(predicate = default_predicate;
+    background::Bool = true, install::Bool = true,
 parameters...)
     @nospecialize
     if isinteractive()

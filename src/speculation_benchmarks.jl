@@ -1,11 +1,8 @@
 
 """
     SpeculationBenchmark
-    SpeculationBenchmark(
-        predicate = $default_predicate,
-        values,
-        samples::Integer = $default_samples;
-        limit::Integer = $default_limit
+    SpeculationBenchmark(predicate = $default_predicate, values;
+        samples::Integer = $default_samples, limit::Integer = $default_limit
     )
 
 Benchmark the compilation time in the corresponding
@@ -45,8 +42,8 @@ This type implements the iteration interface and part of the indexing interface.
 struct SpeculationBenchmark
     times::Vector{Float64}
 
-    function SpeculationBenchmark(
-        predicate, x, samples::Integer = default_samples; limit = default_limit
+    function SpeculationBenchmark(predicate, x;
+        samples::Integer = default_samples, limit = default_limit
     )
         @nospecialize
 
@@ -72,7 +69,7 @@ struct SpeculationBenchmark
 
         for i in 1:samples
             @info "Running trial `$i`"
-            process = run(Cmd([
+            run(Cmd([
                 "julia",
                 "--project=$new_project_path",
                 "--eval",
@@ -80,17 +77,15 @@ struct SpeculationBenchmark
                 data_path,
                 time_path
             ]))
-            success(process) || error("The speculation benchmark failed")
             push!(times, read(time_path, Float64))
         end
 
         new(times)
     end
-    function SpeculationBenchmark(x, samples::Integer)
+    function SpeculationBenchmark(x; parameters...)
         @nospecialize
-        SpeculationBenchmark(default_predicate, x, samples)
+        SpeculationBenchmark(default_predicate, x; parameters...)
     end
-    SpeculationBenchmark(@nospecialize x) = SpeculationBenchmark(x, default_samples)
 end
 
 eltype(::Type{SpeculationBenchmark}) = Float64
