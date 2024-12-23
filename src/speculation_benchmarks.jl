@@ -55,6 +55,7 @@ struct SpeculationBenchmark
         times = Float64[]
 
         @info "Instantiating temporary project environment for `SpeculationBenchmark`"
+
         resolve()
         cp(_active_project, new_project_path)
         cp(
@@ -104,17 +105,13 @@ length(sb::SpeculationBenchmark) = length(sb.times)
 
 function show(io::IO, ::MIME"text/plain", sb::SpeculationBenchmark)
     times = sb.times
-    samples = length(times)
-    i = (samples + 1) ÷ 2
-    median = begin
-        if isodd(samples) partialsort(times, i)
-        else sum(partialsort(times, i:(i + 1))) / 2
-        end
-    end
+    trials = length(times)
+    i = (trials + 1) ÷ 2
+    median = isodd(trials) ? partialsort(times, i) : sum(partialsort(times, i:(i + 1))) / 2
 
     join(io, [
-        "Precompilation benchmark with `$samples` samples:",
-        "  Mean:      `$(round_time(sum(times) / samples))`",
+        "Precompilation benchmark with `$trials` samples:",
+        "  Mean:      `$(round_time(sum(times) / trials))`",
         "  Median     `$(round_time(median))`",
         "  Minimum:   `$(round_time(minimum(times)))`",
         "  Maximum:   `$(round_time(maximum(times)))`"

@@ -22,6 +22,7 @@ TODO: remove closures, because they can't be precompiled?
 TODO: check this package works in notebooks
 TODO: rename `dry`?
 TODO: make `Verbosity` an `AbstractSet`?
+TODO: fix `install_speculator()` in `startup.jl`
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show

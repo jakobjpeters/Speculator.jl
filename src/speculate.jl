@@ -154,7 +154,7 @@ function initialize_parameters(
             verbosity,
         )
 
-        background ? (@spawn log_review(x, parameters)) : log_review(x, parameters)
+        background ? errormonitor(@spawn log_review(x, parameters)) : log_review(x, parameters)
         nothing
     end
 end
