@@ -161,37 +161,36 @@ end
 
 
 """
-    speculate(predicate = $default_predicate, value; parameters...)
+    speculate(predicate, value; parameters)
+    speculate(value; parameters...)
 
-Generate a precompilation a workload.
+Generate a compilation a workload.
 
-To automatically `speculate` values input into the REPL, see also [`speculate_repl`](@ref).
-To benchmark the compilation time of a workload, see also [`SpeculationBenchmark`](@ref).
+See also [`SpeculationBenchmark`](@ref) and [`speculate`](@ref).
 
 !!! tip
+    Use this in a package to reduce latency for its users.
+
+!!! note
     This function only runs when called during precompilation or an interactive session,
     or when writing precompilation directives to a file.
 
-!!! tip
-    This function can be called repeatedly with the same `value`,
-    which may be useful in interactive environments if there are new methods to precompile.
-
 # Parameters
 
-- `predicate(::Module, ::Symbol)::Bool`:
-    This predicate is checked for each name given by `names(::Module; all = true)`.
-    Returning `true` specifies to search `getproperty(::Module, ::Symbol)`,
+- `predicate = Returns(true)`:
+    This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
+    Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
     whereas returning `false` specifies to ignore the value.
-    The default predicate `$default_predicate` will search every possible method,
+    The default predicate `Returns(true)` will search every possible method,
     up to its generic `limit`, whereas the predicate `Returns(false)` will
     only search for methods of values passed directly to `speculate`.
-    This new value can also be accessed in the same manner within the `predicate`.
     Some useful predicates include `Base.isexported`, `Base.ispublic`,
     checking properties of the value itself, and a combination thereof.
 - `value`:
-    When given a `Module`, `speculate` will recursively
-    search its contents using `names(::Module; all = true)`.
-    For each other value, each of their generic `methods`
+    When given a `Module`, `speculate` will recursively search its
+    contents using `names(::Module;\u00A0all\u00A0=\u00A0true)`,
+    for each name the satisifes the `predicate`.
+    For other values, each of their generic `methods`
     are searched for corresponding compilable signatures.
 
 # Keyword parameters
@@ -203,14 +202,14 @@ To benchmark the compilation time of a workload, see also [`SpeculationBenchmark
     a call to `sleep($sleep_duration)` is used to keep the REPL prompt active.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.
-    This is useful for testing workloads with `verbosity = debug`.
-    Methods that have already been specialized are skipped.
+    This is useful for testing workloads with `verbosity\u00A0=\u00A0debug\u00A0|\u00A0review`.
+    Methods that are known to be specialized are skipped.
     Note that `dry` must be `false` to save the workload to a file with the `path` parameter.
 - `limit::Integer = $default_limit`:
     Specifies the maximum number of compilable methods that are generated from a generic method.
     Values less than `1` will throw an error.
     Otherwise, method signatures will be generated from the Cartesian product each parameter type.
-    Concrete types and abstract types marked with `@nospecialize` are used directly.
+    Types marked with `@nospecialize` are used directly.
     Otherwise, compilable types are obtained from the subtypes of `DataType` and `Union`.
     This prevents spending too much time precompiling a single generic method.
 - `path::String = ""`:
@@ -219,12 +218,12 @@ To benchmark the compilation time of a workload, see also [`SpeculationBenchmark
     Note that these directives may require loading additional modules to run.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
-    If this function is used as a precompilation workload,
+    If this function is used in a package as a precompilation workload,
     this should be set to [`silent`](@ref) or [`warn`](@ref).
     See also [`Verbosity`](@ref).
 
 # Examples
-```jldoctest
+```julia-repl
 julia> module Showcase
            export g, h
 
@@ -234,10 +233,11 @@ julia> module Showcase
        end;
 
 julia> speculate(Showcase; verbosity = debug)
+[ Info: Compiled `Main.Showcase.g(::Int)`
 [ Info: Compiled `Main.Showcase.f()`
 
 julia> speculate(Base.isexported, Showcase; verbosity = debug)
-[ Info: Compiled `Main.Showcase.g(::Int)`
+[ Info: Skipped `Main.Showcase.g(::Int)`
 
 julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 [ Info: Compiled `Main.Showcase.h(::String)`

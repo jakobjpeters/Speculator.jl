@@ -20,7 +20,7 @@ const default_limit = 1
 
 const default_predicate = Returns(true)
 
-const default_samples = 8
+const default_trials = 8
 
 const sleep_duration = 0.01
 

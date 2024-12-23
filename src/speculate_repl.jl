@@ -19,18 +19,20 @@ end
         install::Bool = true, background::Bool = true,
     parameters...)
 
-Call [`speculate`](@ref) on each input in the REPL.
+Install a hook that calls
+`speculate(predicate,\u00A0value;\u00A0background,\u00A0parameters...)`
+on each input `value` in the REPL.
 
-This may be disabled using `speculate_repl(false)`.
-Subsequent calls to this function may be used to change the keyword parameters.
+Subsequent calls to this function may be used to replace the hook.
+The hook may be removed using `speculate_repl(;\u00A0install\u00A0=\u00A0false)`.
 This function has no effect in non-interactive sessions.
 
-To benchmark the compilation time of a workload, see also [`SpeculationBenchmark`](@ref).
+See also [`SpeculationBenchmark`](@ref) and [`speculate`](@ref).
 
 !!! tip
     Use this in a `startup.jl` file to reduce latency in the REPL.
 
-```jldoctest
+```julia-repl
 julia> speculate_repl(; limit = 2, verbosity = debug)
 [ Info: The REPL will call `speculate` with each input
 
