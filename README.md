@@ -11,14 +11,6 @@ In the former case, this can be used in a package as a supplement or alternative
 [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl).
 In the latter case, it can be used in a `startup.jl` file or interactively in the REPL.
 
-Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
-The preexisting package
-[PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
-implements similar functionality, notably that
-`PrecompileSignatures.@precompile_signatures ::Module`
-is roughly equivalent to
-`Speculator.speculate(::Module; target = abstract_subtypes | all_names | union_types)`.
-
 ## Usage
 
 ### Installation
@@ -43,10 +35,11 @@ julia> module Showcase
        end;
 
 julia> speculate(Showcase; verbosity = debug)
+[ Info: Compiled `Main.Showcase.g(::Int)`
 [ Info: Compiled `Main.Showcase.f()`
 
 julia> speculate(Base.isexported, Showcase; verbosity = debug)
-[ Info: Compiled `Main.Showcase.g(::Int)`
+[ Info: Skipped `Main.Showcase.g(::Int)`
 
 julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 [ Info: Compiled `Main.Showcase.h(::String)`
@@ -120,8 +113,20 @@ cost ratio in terms of compilation and loading time.
 - Disable during development using Preferences.jl?
 - Support for `UnionAll` types?
 
+## Acknowledgements
+
+Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
+
+The preexisting package PrecompileSignatures.jl implements similar functionality,
+notably that `PrecompileSignatures.@precompile_signatures ::Module`
+is roughly equivalent to `Speculator.speculate(::Module)`.
+
 ## Similar Packages
 
+- [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
+- [JET.jl](https://github.com/aviatesk/JET.jl)
+- [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
+- [PackageCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
 - [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
