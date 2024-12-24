@@ -182,7 +182,7 @@ To measure the duration of compilation in a workload, see also [`SpeculationBenc
     Use this in a package to reduce latency for its users.
 
 !!! note
-    This function only runs when called during precompilation or an interactive session,
+    Speculation only runs when called during precompilation or an interactive session,
     or when writing precompilation directives to a file.
 
 # Parameters
@@ -221,8 +221,8 @@ To measure the duration of compilation in a workload, see also [`SpeculationBenc
     Otherwise, compilable types are obtained from the subtypes of `DataType` and `Union`.
     This prevents spending too much time precompiling a single generic method.
 - `path::String = ""`:
-    Writes each successful precompilation directive to a file
-    if the `path` is not empty and it is not a `dry` run.
+    Saves a workload by writing each successful precompilation directive
+    to a file if the `path` is not empty and it is not a `dry` run.
     Note that these directives may require loading additional modules to run.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
@@ -268,6 +268,10 @@ function speculate(predicate, value;
         initialize_parameters(
             value, background, dry, generate, is_interactive, limit, path, predicate, verbosity
         )
+    else
+        log_foreground_repl(!background && is_interactive && isdefined(Base, :active_repl)) do
+            @warn "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save a workload"
+        end
     end
 end
 function speculate(x; parameters...)

@@ -19,8 +19,6 @@ TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?
 TODO: check this package works in notebooks
 TODO: rename `dry`?
-TODO: fix `install_speculator()` in `startup.jl`
-TODO: warn if `speculate` is skipped
 TODO: wait for a background call to `speculate` to finish before starting another?
 TODO: reimplement `all_modules::AllModules`
 TODO: document that some methods aren't skipped
