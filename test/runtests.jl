@@ -44,9 +44,9 @@ end
     verbosities = [debug, review, silent, warn]
     combined_verbosities = reduce(|, verbosities)
 
-    @test string(combined_verbosities) == "(debug | review | warn)::Verbosity"
-    @test combined_verbosities == debug | review | warn
-    @test combined_verbosities ⊆ debug | review | warn
+    @test string(combined_verbosities) == "(debug ∪ review ∪ warn)::Verbosity"
+    @test combined_verbosities == debug ∪ review ∪ warn
+    @test combined_verbosities ⊆ debug ∪ review ∪ warn
     @test combined_verbosities.value == 7
     @test all(v -> v ⊆ v, verbosities)
     @test all(v -> silent ⊆ v, verbosities)

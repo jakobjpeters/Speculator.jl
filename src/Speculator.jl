@@ -19,16 +19,18 @@ TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?
 TODO: check this package works in notebooks
 TODO: rename `dry`?
-TODO: make `Verbosity` an `AbstractSet`?
 TODO: fix `install_speculator()` in `startup.jl`
 TODO: warn if `speculate` is skipped
 TODO: wait for a background call to `speculate` to finish before starting another?
 TODO: reimplement `all_modules::AllModules`
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
+TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
 =#
 
-import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show
+import Base:
+    eltype, firstindex, getindex, isdisjoint, isempty,
+    issetequal, issubset, iterate, lastindex, length, show
 using Base:
     Iterators, Threads, IdSet, active_project, isvarargtype,
     mul_with_overflow, specializations, uniontypes, unsorted_names

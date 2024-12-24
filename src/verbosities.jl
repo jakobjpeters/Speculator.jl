@@ -4,15 +4,21 @@
 
 A flag that determine what logging statements are shown during [`speculate`](@ref).
 
-The component flags are [`silent`](@ref), [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
+This is modelled as a set, where [`silent`](@ref) is the empty set.
+The non-empty component flags are [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
 
 # Interface
 
-- `|(::Verbosity,\u00A0::Verbosity)`
-    - Combine the verbosities such that each satisfies `issubset` with the returned verbosity.
+This type implements part of the `AbstractSet` interface.
+
+- `intersect(::Verbosity,\u00A0::Verbosity...)`
+- `isdisjoint(::Verbosity,\u00A0::Verbosity)`
+- `isempty(::Verbosity)`
+- `issetequal(::Verbosity,\u00A0::Verbosity)`
 - `issubset(::Verbosity,\u00A0::Verbosity)`
-    - Check whether each flag of the first verbosity is a component of the second verbosity.
+- `setdiff(::Verbosity,\u00A0::Verboosity...)`
 - `show(::IO,\u00A0::Verbosity)`
+- `union(::Verbosity,\u00A0::Verbosity...)`
 
 # Examples
 
@@ -20,10 +26,10 @@ The component flags are [`silent`](@ref), [`debug`](@ref), [`review`](@ref), and
 julia> silent
 silent::Verbosity
 
-julia> debug | review
-(debug | review)::Verbosity
+julia> debug ∪ review
+(debug ∪ review)::Verbosity
 
-julia> debug ⊆ debug | review
+julia> debug ⊆ debug ∪ review
 true
 
 julia> debug ⊆ warn
@@ -35,7 +41,15 @@ struct Verbosity
 
     global verbosity(x::Union{Int, UInt8}) = new(x)
 
-    Base.:|(v::Verbosity, _v::Verbosity) = new(v.value | _v.value)
+    Base.union(v::Verbosity, vs::Verbosity...) = new(reduce(
+        (value, _v) -> value | _v.value, vs;
+    init = v.value))
+
+    Base.intersect(v::Verbosity, vs::Verbosity...) = new(reduce(
+        (value, _v) -> value & _v.value, vs;
+    init = v.value))
+
+    Base.setdiff(v::Verbosity, vs::Verbosity...) = new(v.value & ~union(vs...).value)
 end
 
 """
@@ -101,6 +115,12 @@ warn::Verbosity
 """
 const warn = verbosity(4)
 
+isdisjoint(v::Verbosity, _v::Verbosity) = isempty(v ∩ _v)
+
+isempty(v::Verbosity) = v == silent
+
+isssetequal(v::Verbosity, _v::Verbosity) = v == _v
+
 issubset(v::Verbosity, _v::Verbosity) = is_subset(v.value, _v.value)
 
 function show(io::IO, v::Verbosity)
@@ -115,7 +135,7 @@ function show(io::IO, v::Verbosity)
         if length(names) == 1 print(io, only(names))
         else
             print(io, '(')
-            join(io, names, " | ")
+            join(io, names, " ∪ ")
             print(io, ')')
         end
     end
