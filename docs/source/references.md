@@ -1,13 +1,23 @@
 
 # References
 
-## Speculative Compilation
-
 ```@docs
 SpeculationBenchmark
-install_speculator
 speculate
+```
+
+### Input Speculator
+
+```@docs
+install_speculator
 uninstall_speculator
+```
+
+### All Modules
+
+```@docs
+AllModules
+all_modules
 ```
 
 ### Verbosities

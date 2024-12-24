@@ -113,8 +113,13 @@ search((@nospecialize x), p::Parameters) = for method in methods(x)
     compile_methods(x, p, method, method.sig)
 end
 
+search_all_modules(::AllModules, p::Parameters) = for _module in loaded_modules_array()
+    search(_module, p)
+end
+search_all_modules((@nospecialize x), p::Parameters) = search(x, p)
+
 log_review((@nospecialize x), p::Parameters) = log_foreground_repl(p) do
-    elapsed = @elapsed search(x, p)
+    elapsed = @elapsed search_all_modules(x, p)
 
     if review ⊆ p.verbosity
         log_background_repl(p) do
