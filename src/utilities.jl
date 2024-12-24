@@ -32,18 +32,31 @@ function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize 
         _signature = signature(caller_type, caller_types)
         statement = uppercasefirst(string(c))
 
-        log_repl(() -> (@info "$statement `$_signature`"), p)
+        log_background_repl(() -> (@info "$statement `$_signature`"), p)
     end
 end
 
-function log_repl(f, p::Parameters)
-    (is_background_repl = p.is_background && p.is_repl) && print(stderr, "\r\33[K")
+function log_background_repl(f, is_background_repl::Bool)
+    if is_background_repl
+        sleep(0.01)
+        print(stderr, "\r\33[K")
+    end
+
     f()
+
     if is_background_repl
         println(stderr, "\33[A")
         refresh_line(Base.active_repl.mistate)
     end
 end
+log_background_repl(f, p::Parameters) = log_background_repl(f, p.is_background && p.is_repl)
+
+function log_foreground_repl(f, is_foreground_repl::Bool)
+    is_foreground_repl && println(stderr)
+    f()
+    is_foreground_repl ? print(stderr, "\33[A") : nothing
+end
+log_foreground_repl(f, p::Parameters) = log_foreground_repl(f, !p.is_background && p.is_repl)
 
 function round_time(x::Float64)
     whole, fraction = split(string(max(0.0, round(x; digits = 4))), '.')

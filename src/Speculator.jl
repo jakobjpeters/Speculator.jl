@@ -7,9 +7,7 @@ BUG: catch possible error in `scripts/trials.jl` with `add`
 TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl
     https://github.com/JuliaLang/PrecompileTools.jl/issues/28
 TODO: plot number of methods vs `limit`
-TODO: rename `speculate_repl` to `speculate_interactive`?
 TODO: tutorial to create a system image?
-TODO: document skipping methods that are already specialized
 TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
     - `speculate(Base; dry = true)`
     - `length(PrecompileSignatures.precompilables(Base))`
@@ -25,6 +23,9 @@ TODO: make `Verbosity` an `AbstractSet`?
 TODO: fix `install_speculator()` in `startup.jl`
 TODO: warn if `speculate` is skipped
 TODO: wait for a background call to `speculate` to finish before starting another?
+TODO: reimplement `all_modules::AllModules`
+TODO: document that some methods aren't skipped
+    `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show

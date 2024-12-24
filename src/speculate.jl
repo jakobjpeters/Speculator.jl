@@ -4,7 +4,7 @@ function log_warn(p::Parameters, caller_type::Type, (@nospecialize compilable_ty
         _signature = signature(caller_type, compilable_types)
         p.counters[warned] += 1
 
-        log_repl(() -> (
+        log_background_repl(() -> (
             @warn "Compilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
         ), p)
     end
@@ -113,12 +113,11 @@ search((@nospecialize x), p::Parameters) = for method in methods(x)
     compile_methods(x, p, method, method.sig)
 end
 
-function log_review((@nospecialize x), p::Parameters)
-    (is_foreground_repl = !p.is_background && p.is_repl) && println(stderr)
+log_review((@nospecialize x), p::Parameters) = log_foreground_repl(p) do
     elapsed = @elapsed search(x, p)
 
     if review ⊆ p.verbosity
-        log_repl(p) do
+        log_background_repl(p) do
             counters = p.counters
             _generated = counters[generated]
             _generic = counters[generic]
@@ -130,12 +129,10 @@ function log_review((@nospecialize x), p::Parameters)
                 _compiled, _skipped, _warned = map(
                     s -> counters[s], [compiled, skipped, warned]
                 )
-                @info "$header\nCompiled   `$_compiled`\nSkipped    `$_skipped`\nWarned     `$_warned`"
+                @info "$header\nCompiled `$_compiled`\nSkipped  `$_skipped`\nWarned   `$_warned`"
             end
         end
     end
-
-    is_foreground_repl ? print(stderr, "\33[A") : nothing
 end
 
 function initialize_parameters(
