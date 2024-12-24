@@ -2,11 +2,11 @@
 @enum Counter compiled generated generic skipped warned
 
 struct Parameters
-    background::Bool
     counters::Dict{Counter, Int}
     dry::Bool
     file::IOStream
     generate::Bool
+    is_repl::Bool
     limit::Int
     predicate
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}}
@@ -38,16 +38,16 @@ function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize 
 end
 
 function log_repl(f, p::Parameters)
-    background = p.background
+    is_repl = p.is_repl
 
-    if background
+    if is_repl
         sleep(sleep_duration)
         print(stderr, "\r\33[K\33[A")
     end
 
     f()
 
-    if background
+    if is_repl
         println(stderr)
         refresh_line(Base.active_repl.mistate)
     end

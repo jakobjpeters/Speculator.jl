@@ -140,11 +140,11 @@ function initialize_parameters(
 )
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(
-            background && is_interactive,
             Dict(map(o -> o => 0, [compiled, generated, generic, skipped, warned])),
             dry,
             file,
             generate,
+            background && is_interactive && isdefined(Base, :active_repl),
             limit,
             predicate,
             IdDict{Type, Pair{Vector{Type}, Bool}}(),
