@@ -23,6 +23,8 @@ TODO: check this package works in notebooks
 TODO: rename `dry`?
 TODO: make `Verbosity` an `AbstractSet`?
 TODO: fix `install_speculator()` in `startup.jl`
+TODO: warn if `speculate` is skipped
+TODO: wait for a background call to `speculate` to finish before starting another?
 =#
 
 import Base: eltype, firstindex, getindex, issubset, iterate, lastindex, length, show

@@ -114,6 +114,7 @@ search((@nospecialize x), p::Parameters) = for method in methods(x)
 end
 
 function log_review((@nospecialize x), p::Parameters)
+    (is_foreground_repl = !p.is_background && p.is_repl) && println(stderr)
     elapsed = @elapsed search(x, p)
 
     if review ⊆ p.verbosity
@@ -133,10 +134,20 @@ function log_review((@nospecialize x), p::Parameters)
             end
         end
     end
+
+    is_foreground_repl ? print(stderr, "\33[A") : nothing
 end
 
 function initialize_parameters(
-    (@nospecialize x), background, dry, generate, is_interactive, limit, path, predicate, verbosity
+    (@nospecialize x),
+    background::Bool,
+    dry::Bool,
+    generate::Bool,
+    is_interactive::Bool,
+    limit::Int,
+    path::String,
+    (@nospecialize predicate),
+    verbosity::Verbosity
 )
     open(generate ? path : tempname(); write = true) do file
         parameters = Parameters(
@@ -144,7 +155,8 @@ function initialize_parameters(
             dry,
             file,
             generate,
-            background && is_interactive && isdefined(Base, :active_repl),
+            background,
+            is_interactive && isdefined(Base, :active_repl),
             limit,
             predicate,
             IdDict{Type, Pair{Vector{Type}, Bool}}(),
@@ -161,7 +173,7 @@ end
 
 
 """
-    speculate(predicate, value; parameters)
+    speculate(predicate, value; parameters...)
     speculate(value; parameters...)
 
 Generate a compilation a workload.
@@ -199,14 +211,12 @@ To measure the duration of compilation in a workload, see also [`SpeculationBenc
 - `background::Bool = false`:
     Specifies whether to precompile on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
-    In an interactive session with `debug` in the `verbosity`,
-    a call to `sleep($sleep_duration)` is used to keep the REPL prompt active.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.
     This is useful for testing workloads with `verbosity\u00A0=\u00A0debug\u00A0|\u00A0review`.
     Methods that are known to be specialized are skipped.
     Note that `dry` must be `false` to save the workload to a file with the `path` parameter.
-- `limit::Integer = $default_limit`:
+- `limit::Int = $default_limit`:
     Specifies the maximum number of compilable methods that are generated from a generic method.
     Values less than `1` will throw an error.
     Otherwise, method signatures will be generated from the Cartesian product each parameter type.
@@ -248,15 +258,14 @@ julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 function speculate(predicate, value;
     background::Bool = false,
     dry::Bool = false,
-    limit::Integer = default_limit,
+    limit::Int = default_limit,
     path::String = "",
     verbosity::Verbosity = warn
 )
     @nospecialize
     limit > 0 || error("The `limit` must be greater than `0`")
 
-    is_interactive = isinteractive()
-    generate = !(dry || isempty(path))
+    is_interactive, generate = isinteractive(), !(dry || isempty(path))
 
     if generate || is_interactive || (@ccall jl_generating_output()::Cint) == 1
         initialize_parameters(

@@ -6,6 +6,7 @@ struct Parameters
     dry::Bool
     file::IOStream
     generate::Bool
+    is_background::Bool
     is_repl::Bool
     limit::Int
     predicate
@@ -22,8 +23,6 @@ const default_predicate = Returns(true)
 
 const default_trials = 8
 
-const sleep_duration = 0.01
-
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
 function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize caller_types))
@@ -38,17 +37,10 @@ function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize 
 end
 
 function log_repl(f, p::Parameters)
-    is_repl = p.is_repl
-
-    if is_repl
-        sleep(sleep_duration)
-        print(stderr, "\r\33[K\33[A")
-    end
-
+    (is_background_repl = p.is_background && p.is_repl) && print(stderr, "\r\33[K")
     f()
-
-    if is_repl
-        println(stderr)
+    if is_background_repl
+        println(stderr, "\33[A")
         refresh_line(Base.active_repl.mistate)
     end
 end
