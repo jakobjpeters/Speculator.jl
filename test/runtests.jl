@@ -144,8 +144,8 @@ end
     end
 
     _is = Speculator.InputSpeculator((
-        background = true,
-        dry = true,
+        is_background = true,
+        is_dry = true,
         limit = 8,
         path = "precompile.jl",
         verbosity = debug ∪ review

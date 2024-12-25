@@ -61,7 +61,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
 
             if !skip
                 caller_type = Typeof(x)
-                dry = p.dry
+                dry = p.is_dry
 
                 if !dry
                     specialization_types = IdSet{Type}()
@@ -80,8 +80,9 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                         if any(==(signature_type), specialization_types)
                             log_debug(p, skipped, caller_type, compilable_types)
                         elseif precompile(signature_type)
+                            file = p.file
                             log_debug(p, compiled, caller_type, compilable_types)
-                            if p.generate println(p.file, "precompile(", signature_type, ')') end
+                            if isopen(file) println(file, "precompile(", signature_type, ')') end
                         else log_warn(p, caller_type, compilable_types)
                         end
                     end
@@ -124,7 +125,7 @@ log_review((@nospecialize x), p::Parameters) = log_foreground_repl(p) do
             seconds = round_time(elapsed)
             header = "Generated `$_generated` methods from `$_generic` generic methods in `$seconds` seconds"
 
-            if p.dry @info "$header"
+            if p.is_dry @info "$header"
             else
                 _compiled, _skipped, _warned = map(
                     s -> counters[s], [compiled, skipped, warned]
@@ -137,33 +138,21 @@ end
 
 function initialize_parameters(
     (@nospecialize x),
-    background::Bool,
-    dry::Bool,
-    generate::Bool,
-    is_interactive::Bool,
+    generate,
+    is_background::Bool,
+    is_dry::Bool,
+    is_repl::Bool,
     limit::Int,
     path::String,
     (@nospecialize predicate),
     verbosity::Verbosity
 )
     open(generate ? path : tempname(); write = true) do file
-        parameters = Parameters(
-            Dict(map(o -> o => 0, [compiled, generated, generic, skipped, warned])),
-            dry,
-            file,
-            generate,
-            background,
-            is_interactive && isdefined(Base, :active_repl),
-            limit,
-            predicate,
-            IdDict{Type, Pair{Vector{Type}, Bool}}(),
-            IdSet{Any}(),
-            IdDict{DataType, Vector{Any}}(),
-            IdDict{Union, Vector{Any}}(),
-            verbosity,
+        generate || close(file)
+        parameters = Parameters(;
+            file, is_background, is_dry, is_repl, limit, predicate, verbosity
         )
-
-        background ? errormonitor(@spawn log_review(x, parameters)) : log_review(x, parameters)
+        is_background ? errormonitor(@spawn log_review(x, parameters)) : log_review(x, parameters)
         nothing
     end
 end
@@ -260,12 +249,12 @@ function speculate(predicate, value;
 )
     @nospecialize
     limit > 0 || error("The `limit` must be greater than `0`")
-
     is_interactive, generate = isinteractive(), !(dry || isempty(path))
 
     if generate || is_interactive || (@ccall jl_generating_output()::Cint) == 1
+        is_repl = is_interactive && isdefined(Base, :active_repl)
         initialize_parameters(
-            value, background, dry, generate, is_interactive, limit, path, predicate, verbosity
+            value, generate, background, dry, is_repl, limit, path, predicate, verbosity
         )
     else
         log_foreground_repl(!background && is_interactive && isdefined(Base, :active_repl)) do

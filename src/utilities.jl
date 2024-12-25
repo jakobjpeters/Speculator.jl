@@ -1,20 +1,21 @@
 
 @enum Counter compiled generated generic skipped warned
 
-struct Parameters
-    counters::Dict{Counter, Int}
-    dry::Bool
+@kwdef struct Parameters
     file::IOStream
-    generate::Bool
     is_background::Bool
+    is_dry::Bool
     is_repl::Bool
     limit::Int
     predicate
-    product_cache::IdDict{Type, Pair{Vector{Type}, Bool}}
-    searched::IdSet{Any}
-    subtype_cache::IdDict{DataType, Vector{Any}}
-    union_type_cache::IdDict{Union, Vector{Any}}
     verbosity::Verbosity
+    counters::Dict{Counter, Int} = Dict(map(
+        o -> o => 0, [compiled, generated, generic, skipped, warned]
+    ))
+    product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{DataType, Pair{Vector{Type}, Bool}}()
+    searched::IdSet{Any} = IdSet{Any}()
+    subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()
+    union_type_cache::IdDict{Union, Vector{Any}} = IdDict{Union, Vector{Any}}()
 end
 
 const default_limit = 1
