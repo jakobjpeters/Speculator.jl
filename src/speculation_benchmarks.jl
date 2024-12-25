@@ -49,7 +49,6 @@ struct SpeculationBenchmark
 
         _active_project = active_project()
         new_project_directory = mktempdir()
-        new_project_path = joinpath(new_project_directory, "Project.toml")
         package_path = dirname(@__DIR__)
         data_path, time_path = tempname(), tempname()
         times = Float64[]
@@ -57,12 +56,12 @@ struct SpeculationBenchmark
         @info "Instantiating temporary project environment"
 
         resolve()
-        cp(_active_project, new_project_path)
+        cp(_active_project, joinpath(new_project_directory, "Project.toml"))
         cp(
             joinpath(dirname(_active_project), "Manifest.toml"),
             joinpath(new_project_directory, "Manifest.toml")
         )
-        activate(new_project_path)
+        activate(new_project_directory)
         develop(; path = package_path)
         add(["Pkg", "Serialization"])
         instantiate()
@@ -73,9 +72,8 @@ struct SpeculationBenchmark
             @info "Running trial `$i`"
             run(Cmd([
                 "julia",
-                "--project=$new_project_path",
-                "--eval",
-                "include($(repr(joinpath(package_path, "scripts", "trials.jl"))))",
+                "--project=$new_project_directory",
+                joinpath(package_path, "scripts", "trials.jl"),
                 data_path,
                 time_path
             ]))
