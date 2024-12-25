@@ -37,7 +37,6 @@ using .Threads: @spawn
 using Core: TypeofBottom, Typeof
 using InteractiveUtils: subtypes
 using Pkg: activate, add, develop, instantiate, resolve
-using REPL: LineEdit.refresh_line
 using Serialization: serialize
 
 include("all_modules.jl")

@@ -46,8 +46,9 @@ function log_background_repl(f, is_background_repl::Bool)
     f()
 
     if is_background_repl
+        active_repl = Base.active_repl
         println(stderr, "\33[A")
-        refresh_line(Base.active_repl.mistate)
+        typeof(active_repl).name.module.LineEdit.refresh_line(active_repl.mistate)
     end
 end
 log_background_repl(f, p::Parameters) = log_background_repl(f, p.is_background && p.is_repl)
