@@ -232,7 +232,7 @@ path = tempname()
 @test issorted(map(limit -> count_methods(all_modules; limit), 1:4))
 
 @test count_methods(Returns(false), all_modules) == 0
-@test count_methods(Returns(false), () -> nothing) == 1
+@test count_methods(Returns(false), () -> nothing) == 0
 
 rm(path)
 

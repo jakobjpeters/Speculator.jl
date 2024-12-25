@@ -12,6 +12,7 @@ const counters = instances(Counter)
     predicate
     verbosity::Verbosity
     counters::Dict{Counter, Int} = Dict(map(o -> o => 0, counters))
+    predicate_cache::IdDict{Pair{Module, Symbol}, Bool} = IdDict{Pair{Module, Symbol}, Bool}()
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{DataType, Pair{Vector{Type}, Bool}}()
     searched::IdSet{Any} = IdSet{Any}()
     subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()

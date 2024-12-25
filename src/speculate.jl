@@ -19,6 +19,8 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             skip = false
             limit = p.limit
             no_specialize = m.nospecialize
+            predicate_cache = p.predicate_cache
+            predicate = p.predicate
             product_cache = p.product_cache
             product_types = Vector{Type}[]
 
@@ -36,9 +38,15 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                                 branch = pop!(abstract_types)
 
                                 if isconcretetype(branch)
-                                    push!(new_compilable_types, branch)
-                                    new_skip = new_skip || length(new_compilable_types) > limit
-                                    new_skip && break
+                                    name = branch.name
+                                    _module, _name = name.module, name.name
+                                    if get!(predicate_cache, _module => _name) do
+                                        predicate(_module, name)
+                                    end
+                                        push!(new_compilable_types, branch)
+                                        new_skip = new_skip || length(new_compilable_types) > limit
+                                        new_skip && break
+                                    end
                                 else subtypes!(abstract_types, branch, p)
                                 end
                             end
@@ -91,7 +99,11 @@ end
 compile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
 search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
-    if isdefined(x, name) && !isdeprecated(x, name) && p.predicate(x, name)
+    if (
+        isdefined(x, name) &&
+        !isdeprecated(x, name) &&
+        get!(() -> p.predicate(x, name), p.predicate_cache, x => name)
+    )
         searched = p.searched
         _x = getproperty(x, name)
 
@@ -116,8 +128,8 @@ log_review((@nospecialize x), p::Parameters) = log_foreground_repl(p) do
 
     if review ⊆ p.verbosity
         log_background_repl(p) do
-            counters = p.counters
-            _compiled, _generic, _skipped, _warned = map(s -> counters[s], counters)
+            _counters = p.counters
+            _compiled, _generic, _skipped, _warned = map(s -> _counters[s], counters)
             generated = _compiled + _skipped + _warned
             seconds = round_time(elapsed)
             header = "Generated `$generated` methods from `$_generic` generic methods in `$seconds` seconds"
@@ -173,9 +185,11 @@ To measure the duration of compilation in a workload, see also [`SpeculationBenc
     This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
     Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
     whereas returning `false` specifies to ignore the value.
-    The default predicate `Returns(true)` will search every possible method,
-    up to its generic `limit`, whereas the predicate `Returns(false)` will
-    only search for methods of values passed directly to `speculate`.
+    This is first called when searching the names of a `Module`,
+    and later called when searching for concrete types of method parameters.
+    The default predicate `Returns(true)` will search everything possible,
+    up to the generic `limit`, whereas the predicate
+    `Returns(false)` will not generate any methods.
     Some useful predicates include `Base.isexported`, `Base.ispublic`,
     checking properties of the value itself, and a combination thereof.
 - `value`:
