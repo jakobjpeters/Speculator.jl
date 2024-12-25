@@ -2,8 +2,6 @@
 module Speculator
 
 #=
-BUG: `speculate_repl(; verbosity = review)` fails to handle the terminal text sometimes
-BUG: catch possible error in `scripts/trials.jl` with `add`
 TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl?
     https://github.com/JuliaLang/PrecompileTools.jl/issues/28
 TODO: plot number of methods vs `limit` vs time
@@ -23,7 +21,6 @@ TODO: wait for a background call to `speculate` to finish before starting anothe
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
-TODO: try to remove `Pkg` dependency
 =#
 
 import Base:
@@ -36,7 +33,6 @@ using .Iterators: product
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof
 using InteractiveUtils: subtypes
-using Pkg: activate, add, develop, instantiate, resolve
 using Serialization: serialize
 
 include("all_modules.jl")

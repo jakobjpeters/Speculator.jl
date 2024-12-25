@@ -1,20 +1,19 @@
 
-using Base: active_project
 using Pkg: activate, add, develop, instantiate, resolve
 
-const _active_project = active_project()
-const new_project_directory = mktempdir()
-const new_project_path = joinpath(new_project_directory, "Project.toml")
+const active_project, new_directory = ARGS
+const new_project = joinpath(new_directory, "Project.toml")
 const package_path = dirname(@__DIR__)
 
-# resolve()
-cp(_active_project, new_project_path)
+activate(active_project)
+resolve()
+cp(active_project, new_project)
 cp(
-    joinpath(dirname(_active_project), "Manifest.toml"),
-    joinpath(new_project_directory, "Manifest.toml")
+    joinpath(dirname(active_project), "Manifest.toml"),
+    joinpath(new_directory, "Manifest.toml")
 )
-activate(new_project_path)
-develop(; path = package_path)
+activate(new_project)
+develop(; path = dirname(@__DIR__))
 add(["Pkg", "Serialization"])
 instantiate()
-activate(_active_project)
+activate(active_project)
