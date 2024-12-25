@@ -124,8 +124,10 @@ is roughly equivalent to `Speculator.speculate(::Module)`.
 ## Similar Packages
 
 - [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
+- [CompileTraces.jl](https://github.com/serenity4/CompileTraces.jl)
 - [JET.jl](https://github.com/aviatesk/JET.jl)
 - [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
+- [PackageCompiler.jl](https://github.com/JuliaLang/PackageCompiler.jl)
 - [PkgCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
