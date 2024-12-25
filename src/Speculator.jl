@@ -23,6 +23,7 @@ TODO: wait for a background call to `speculate` to finish before starting anothe
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
+TODO: try to remove `Pkg` dependency
 =#
 
 import Base:

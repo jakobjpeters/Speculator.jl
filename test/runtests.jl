@@ -1,4 +1,3 @@
-using Base: is_interactive
 
 using Aqua, ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
 
@@ -28,6 +27,7 @@ Aqua.test_all(Speculator)
         :develop,
         :instantiate,
         :isvarargtype,
+        :loaded_modules_array,
         :mul_with_overflow,
         :resolve,
         :specializations,
@@ -42,7 +42,7 @@ end
 
 @testset "`Verbosity`" begin
     verbosities = [debug, review, silent, warn]
-    combined_verbosities = reduce(|, verbosities)
+    combined_verbosities = reduce(union, verbosities)
 
     @test string(combined_verbosities) == "(debug ∪ review ∪ warn)::Verbosity"
     @test combined_verbosities == debug ∪ review ∪ warn
@@ -58,7 +58,6 @@ end
 @testset "`log_review`" begin
     open(tempname(); write = true) do file
         p = Speculator.Parameters(
-            false,
             Dict(map(o -> o => 0, [
                 Speculator.compiled,
                 Speculator.generated,
@@ -66,8 +65,10 @@ end
                 Speculator.skipped,
                 Speculator.warned
             ])),
+            false,
+            file,
             true,
-            file,
+            false,
             false,
             1,
             Speculator.default_predicate,
@@ -80,35 +81,7 @@ end
 
         @test_logs (
             :info,
-            r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds$"
-        ) Speculator.log_review(nothing, p)
-    end
-
-    open(tempname(); write = true) do file
-        p = Speculator.Parameters(
-            false,
-            Dict(map(o -> o => 0, [
-                Speculator.compiled,
-                Speculator.generated,
-                Speculator.generic,
-                Speculator.skipped,
-                Speculator.warned
-            ])),
-            false,
-            file,
-            false,
-            1,
-            Speculator.default_predicate,
-            IdDict{Type, Pair{Vector{Type}, Bool}}(),
-            Base.IdSet{Any}(),
-            IdDict{DataType, Vector{Any}}(),
-            IdDict{Union, Vector{Any}}(),
-            review,
-        )
-
-        @test_logs (
-            :info,
-            r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds\nCompiled   `0`\nSkipped    `0`\nWarned     `0`$"
+            r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds\nCompiled `0`\nSkipped  `0`\nWarned   `0`$"
         ) Speculator.log_review(nothing, p)
     end
 end
@@ -147,7 +120,7 @@ end
     @test iterate(sb, 2) == (0.0, 3)
     @test lastindex(sb) == 8
     @test length(sb) == 8
-    @test sprint(show, MIME"text/plain"(), sb) == "Precompilation benchmark with `8` samples:\n  Mean:      `0.0000`\n  Median     `0.0000`\n  Minimum:   `0.0000`\n  Maximum:   `0.0000`"
+    @test sprint(show, MIME"text/plain"(), sb) == "Precompilation benchmark with `8` samples:\n  Mean:    `0.0000`\n  Median   `0.0000`\n  Minimum: `0.0000`\n  Maximum: `0.0000`"
     # TODO: test display of mean, median, minimum, and maximum
 end
 
@@ -156,7 +129,9 @@ end
     x = Base.remove_linenums!(is(true))
     lines = split(string(x), '\n')
 
-    @test eval(x)
+    b = false
+    redirect_stderr(() -> b = eval(x), devnull)
+    @test b
 
     for (line, regex) in zip(lines, [
         r"begin",
@@ -173,19 +148,21 @@ end
         dry = true,
         limit = 8,
         path = "precompile.jl",
-        verbosity = debug | review
+        verbosity = debug ∪ review
     ), Base.isexported)
     _x = Base.remove_linenums!(_is(:(f() = true)))
     _lines = split(string(_x), '\n')
 
-    @test eval(_x)()
+    _b = false
+    redirect_stderr(() -> _b = invokelatest(eval(_x)), devnull)
+    @test _b
 
     for (line, regex) in zip(_lines, [
         r"begin",
         r" {4}var\"##\d+\" = \(f\(\) = begin",
         r" {16}true",
         r" {12}end\)",
-        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \"precompile.jl\", verbosity = \(debug | review\)::Verbosity\)\.\.\.\)",
+        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \"precompile.jl\", verbosity = \(debug ∪ review\)::Verbosity\)\.\.\.\)",
         r" {4}var\"##\d+\"",
         r"end"
     ])
@@ -203,18 +180,21 @@ end
 end
 
 function count_methods(predicate, value; parameters...)
-    path = tempname()
-    speculate(predicate, value; path, parameters...)
-    length(readlines(path))
+   pipe = Pipe()
+   redirect_stderr(pipe) do
+       speculate(predicate, value; path = tempname(), verbosity = review, parameters...)
+   end
+   close(pipe[2])
+   parse(Int, only(match(r"`(\d+)` generic", read(pipe, String)).captures))
 end
 count_methods(value; parameters...) = count_methods(
     Speculator.default_predicate, value;
 parameters...)
 
-speculator_count = count_methods(Base)
+speculator_count = count_methods(all_modules)
 precompile_signatures_count = length(
-    PrecompileSignatures.precompilables(Base, PrecompileSignatures.Config(; split_unions = false))
-)
+    PrecompileSignatures.precompilables(Base.loaded_modules_array(),
+PrecompileSignatures.Config(; split_unions = false)))
 method_analysis_count = 0
 function count_method_analysis(x::Method)
     sig = x.sig
@@ -232,25 +212,26 @@ function count_method_analysis(x::Method)
     true
 end
 count_method_analysis((@nospecialize _)) = true
-visit(count_method_analysis, Base)
-@test method_analysis_count < speculator_count + 5
+visit(count_method_analysis)
+@test method_analysis_count < speculator_count
 @test precompile_signatures_count < speculator_count
 
 path = "precompile.jl"
 rm(path; force = true)
-speculate(X; path, dry = true)
+s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save a workload"
+@test_warn "$s" speculate(X; path, dry = true)
 @test !isfile(path)
 speculate(X; path)
 @test isfile(path)
 
 path = tempname()
-@test_nowarn speculate(Base; path)
+@test_nowarn speculate(all_modules; path)
 @test_broken (include(path); true)
 # include(x -> :(@test $x), path)
 
-@test issorted(map(limit -> count_methods(Base; limit), 1:4))
+@test issorted(map(limit -> count_methods(all_modules; limit), 1:4))
 
-@test count_methods(Returns(false)) == 0
+@test count_methods(Returns(false), all_modules) == 0
 @test count_methods(Returns(false), () -> nothing) == 1
 
 rm(path)

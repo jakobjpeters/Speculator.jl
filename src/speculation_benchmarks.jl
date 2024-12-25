@@ -54,7 +54,7 @@ struct SpeculationBenchmark
         data_path, time_path = tempname(), tempname()
         times = Float64[]
 
-        @info "Instantiating temporary project environment for `SpeculationBenchmark`"
+        @info "Instantiating temporary project environment"
 
         resolve()
         cp(_active_project, new_project_path)
@@ -111,9 +111,9 @@ function show(io::IO, ::MIME"text/plain", sb::SpeculationBenchmark)
 
     join(io, [
         "Precompilation benchmark with `$trials` samples:",
-        "  Mean:      `$(round_time(sum(times) / trials))`",
-        "  Median     `$(round_time(median))`",
-        "  Minimum:   `$(round_time(minimum(times)))`",
-        "  Maximum:   `$(round_time(maximum(times)))`"
+        "  Mean:    `$(round_time(sum(times) / trials))`",
+        "  Median   `$(round_time(median))`",
+        "  Minimum: `$(round_time(minimum(times)))`",
+        "  Maximum: `$(round_time(maximum(times)))`"
     ], '\n')
 end

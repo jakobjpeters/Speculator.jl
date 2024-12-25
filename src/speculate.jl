@@ -61,9 +61,9 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
 
             if !skip
                 caller_type = Typeof(x)
-                dry, generate = p.dry, p.generate
+                dry = p.dry
 
-                if !(dry || generate)
+                if !dry
                     specialization_types = IdSet{Type}()
 
                     for specialization in specializations(m)
@@ -77,16 +77,11 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                         signature_type = Tuple{caller_type, compilable_types...}
                         p.counters[generated] += 1
 
-                        if generate
-                            if precompile(signature_type)
-                                log_debug(p, compiled, caller_type, compilable_types)
-                                println(p.file, "precompile(", signature_type, ')')
-                            else log_warn(p, caller_type, compilable_types)
-                            end
-                        elseif any(==(signature_type), specialization_types)
+                        if any(==(signature_type), specialization_types)
                             log_debug(p, skipped, caller_type, compilable_types)
                         elseif precompile(signature_type)
                             log_debug(p, compiled, caller_type, compilable_types)
+                            if p.generate println(p.file, "precompile(", signature_type, ')') end
                         else log_warn(p, caller_type, compilable_types)
                         end
                     end
@@ -172,7 +167,6 @@ function initialize_parameters(
         nothing
     end
 end
-
 
 """
     speculate(predicate, value; parameters...)

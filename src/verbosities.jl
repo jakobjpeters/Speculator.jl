@@ -119,7 +119,7 @@ isdisjoint(v::Verbosity, _v::Verbosity) = isempty(v ∩ _v)
 
 isempty(v::Verbosity) = v == silent
 
-isssetequal(v::Verbosity, _v::Verbosity) = v == _v
+issetequal(v::Verbosity, _v::Verbosity) = v == _v
 
 issubset(v::Verbosity, _v::Verbosity) = is_subset(v.value, _v.value)
 
