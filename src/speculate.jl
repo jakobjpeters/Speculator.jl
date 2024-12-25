@@ -94,7 +94,7 @@ end
 compile_methods((@nospecialize x), ::Parameters, ::Method, ::UnionAll) = nothing
 
 search(x::Module, p::Parameters) = for name in unsorted_names(x; all = true)
-    if isdefined(x, name) && p.predicate(x, name)
+    if isdefined(x, name) && !isdeprecated(x, name) && p.predicate(x, name)
         searched = p.searched
         _x = getproperty(x, name)
 

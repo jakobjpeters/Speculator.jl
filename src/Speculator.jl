@@ -30,8 +30,8 @@ import Base:
     eltype, firstindex, getindex, isdisjoint, isempty,
     issetequal, issubset, iterate, lastindex, length, show
 using Base:
-    Iterators, Threads, IdSet, active_project, isvarargtype, loaded_modules_array,
-    mul_with_overflow, specializations, uniontypes, unsorted_names
+    Iterators, Threads, IdSet, active_project, isdeprecated, isvarargtype,
+    loaded_modules_array, mul_with_overflow, specializations, uniontypes, unsorted_names
 using .Iterators: product
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof
