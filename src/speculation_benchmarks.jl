@@ -110,7 +110,7 @@ function show(io::IO, ::MIME"text/plain", sb::SpeculationBenchmark)
     median = isodd(trials) ? partialsort(times, i) : sum(partialsort(times, i:(i + 1))) / 2
 
     join(io, [
-        "Precompilation benchmark with `$trials` samples:",
+        "Speculation benchmark with `$trials` samples:",
         "  Mean:    `$(round_time(sum(times) / trials))`",
         "  Median   `$(round_time(median))`",
         "  Minimum: `$(round_time(minimum(times)))`",

@@ -1,6 +1,5 @@
 
-using Base: PkgId, find_package
-using Pkg: PackageSpec, add
+using Base: PkgId
 using Serialization: deserialize
 using Speculator: initialize_parameters, silent
 

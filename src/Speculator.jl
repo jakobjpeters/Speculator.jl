@@ -4,15 +4,15 @@ module Speculator
 #=
 BUG: `speculate_repl(; verbosity = review)` fails to handle the terminal text sometimes
 BUG: catch possible error in `scripts/trials.jl` with `add`
-TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl
+TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl?
     https://github.com/JuliaLang/PrecompileTools.jl/issues/28
-TODO: plot number of methods vs `limit`
+TODO: plot number of methods vs `limit` vs time
 TODO: tutorial to create a system image?
 TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
-    - `speculate(Base; dry = true)`
-    - `length(PrecompileSignatures.precompilables(Base))`
-TODO: document time to search for every possible method:
-    `speculate(Base; verbosity = review)`
+    - `speculate(all_modules; dry = true)`
+    - `length(PrecompileSignatures.precompilables(Base.loaded_modules_array()))`
+TODO: benchmark time to search for every possible method:
+    `speculate(all_modules; verbosity = review)`
 TODO: figure out how `julia --trace-compile=precompile.jl` works
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?

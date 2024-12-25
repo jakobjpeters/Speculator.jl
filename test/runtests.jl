@@ -239,7 +239,7 @@ rm(path)
 # speculate(Base)
 # count precompiled + skipped
 # speculate(Base)
-# test that 0 were precompiled and total number were skipped
+# test that 0 were compiled and total number were skipped
 
 #=
 julia> (::String)() = nothing;

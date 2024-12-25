@@ -126,7 +126,7 @@ is roughly equivalent to `Speculator.speculate(::Module)`.
 - [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
 - [JET.jl](https://github.com/aviatesk/JET.jl)
 - [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
-- [PackageCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
+- [PkgCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
 - [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
