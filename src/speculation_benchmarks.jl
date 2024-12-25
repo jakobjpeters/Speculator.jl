@@ -63,7 +63,7 @@ struct SpeculationBenchmark
 
         serialize(data_path, (predicate, x, limit))
 
-        for i in 1:trials
+        for i ∈ 1:trials
             @info "Running trial `$i`"
             run(Cmd([
                 "julia",

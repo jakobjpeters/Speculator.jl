@@ -3,6 +3,12 @@
 
 const counters = instances(Counter)
 
+const searched_callables = IdSet{DataType}
+
+const searched_functions = IdSet{Function}
+
+const searched_types = IdSet{Type}
+
 @kwdef struct Parameters
     file::IOStream
     is_background::Bool
@@ -14,9 +20,13 @@ const counters = instances(Counter)
     counters::Dict{Counter, Int} = Dict(map(o -> o => 0, counters))
     predicate_cache::IdDict{Pair{Module, Symbol}, Bool} = IdDict{Pair{Module, Symbol}, Bool}()
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{DataType, Pair{Vector{Type}, Bool}}()
-    searched::IdSet{Any} = IdSet{Any}()
+    searched_callables::searched_callables = searched_callables()
+    searched_functions::searched_functions = searched_functions()
+    searched_types::searched_types = searched_types()
     subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()
     union_type_cache::IdDict{Union, Vector{Any}} = IdDict{Union, Vector{Any}}()
+
+    searched_methods::IdSet{Method} = IdSet{Method}()
 end
 
 const default_limit = 1

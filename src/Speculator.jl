@@ -2,6 +2,7 @@
 module Speculator
 
 #=
+BUG: `@time speculate(Int; verbosity = review)`
 TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl?
     https://github.com/JuliaLang/PrecompileTools.jl/issues/28
 TODO: plot number of methods vs `limit` vs time
@@ -31,7 +32,7 @@ import Base:
     eltype, firstindex, getindex, isdisjoint, isempty,
     issetequal, issubset, iterate, lastindex, length, show
 using Base:
-    Iterators, Threads, IdSet, active_project, isdeprecated, isvarargtype,
+    Iterators, Threads, IdSet, active_project, isdeprecated, issingletontype, isvarargtype,
     loaded_modules_array, mul_with_overflow, specializations, uniontypes, unsorted_names
 using .Iterators: product
 using .Threads: @spawn
