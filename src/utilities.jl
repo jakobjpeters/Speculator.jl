@@ -1,5 +1,7 @@
 
-@enum Counter compiled generated generic skipped warned
+@enum Counter compiled generic skipped warned
+
+const counters = instances(Counter)
 
 @kwdef struct Parameters
     file::IOStream
@@ -9,9 +11,7 @@
     limit::Int
     predicate
     verbosity::Verbosity
-    counters::Dict{Counter, Int} = Dict(map(
-        o -> o => 0, [compiled, generated, generic, skipped, warned]
-    ))
+    counters::Dict{Counter, Int} = Dict(map(o -> o => 0, counters))
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{DataType, Pair{Vector{Type}, Bool}}()
     searched::IdSet{Any} = IdSet{Any}()
     subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()

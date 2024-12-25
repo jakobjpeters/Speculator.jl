@@ -64,6 +64,8 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                 dry = p.is_dry
 
                 if !dry
+                    file = p.file
+                    is_open = isopen(file)
                     specialization_types = IdSet{Type}()
 
                     for specialization in specializations(m)
@@ -72,19 +74,14 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                 end
 
                 for compilable_types in product(product_types...)
-                    if dry log_debug(p, generated, caller_type, compilable_types)
-                    else
-                        signature_type = Tuple{caller_type, compilable_types...}
-                        p.counters[generated] += 1
+                    signature_type = Tuple{caller_type, compilable_types...}
 
-                        if any(==(signature_type), specialization_types)
-                            log_debug(p, skipped, caller_type, compilable_types)
-                        elseif precompile(signature_type)
-                            file = p.file
-                            log_debug(p, compiled, caller_type, compilable_types)
-                            if isopen(file) println(file, "precompile(", signature_type, ')') end
-                        else log_warn(p, caller_type, compilable_types)
-                        end
+                    if dry || any(==(signature_type), specialization_types)
+                        log_debug(p, skipped, caller_type, compilable_types)
+                    elseif precompile(signature_type)
+                        log_debug(p, compiled, caller_type, compilable_types)
+                        if is_open println(file, "precompile(", signature_type, ')') end
+                    else log_warn(p, caller_type, compilable_types)
                     end
                 end
             end
@@ -120,16 +117,13 @@ log_review((@nospecialize x), p::Parameters) = log_foreground_repl(p) do
     if review ⊆ p.verbosity
         log_background_repl(p) do
             counters = p.counters
-            _generated = counters[generated]
-            _generic = counters[generic]
+            _compiled, _generic, _skipped, _warned = map(s -> counters[s], counters)
+            generated = _compiled + _skipped + _warned
             seconds = round_time(elapsed)
-            header = "Generated `$_generated` methods from `$_generic` generic methods in `$seconds` seconds"
+            header = "Generated `$generated` methods from `$_generic` generic methods in `$seconds` seconds"
 
             if p.is_dry @info "$header"
             else
-                _compiled, _skipped, _warned = map(
-                    s -> counters[s], [compiled, skipped, warned]
-                )
                 @info "$header\nCompiled `$_compiled`\nSkipped  `$_skipped`\nWarned   `$_warned`"
             end
         end
@@ -198,7 +192,7 @@ To measure the duration of compilation in a workload, see also [`SpeculationBenc
     The number of available threads can be determined using `Threads.nthreads(:default)`.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.
-    This is useful for testing workloads with `verbosity\u00A0=\u00A0debug\u00A0|\u00A0review`.
+    This is useful for testing workloads with `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
     Methods that are known to be specialized are skipped.
     Note that `dry` must be `false` to save the workload to a file with the `path` parameter.
 - `limit::Int = $default_limit`:
