@@ -27,4 +27,4 @@ trial(is_dry) = @elapsed initialize_parameters(
 )
 
 trial(true)
-write(time_path, max(0, trial(false) - trial(false)))
+write(time_path, max(0.0001, trial(false) - trial(false)))
