@@ -10,10 +10,9 @@ const searched_functions = IdSet{Function}
 const searched_types = IdSet{Type}
 
 @kwdef struct Parameters
+    background_repl::Bool
+    dry::Bool
     file::IOStream
-    is_background::Bool
-    is_dry::Bool
-    is_repl::Bool
     limit::Int
     predicate
     verbosity::Verbosity
@@ -35,6 +34,15 @@ const default_predicate = Returns(true)
 
 const default_trials = 8
 
+is_repl_ready() = (
+    isdefined(Base, :active_repl_backend) &&
+    isdefined(Base, :active_repl) &&
+    !isnothing(Base.active_repl_backend)
+) && begin
+    active_repl = Base.active_repl
+    !(isnothing(active_repl) || isnothing(active_repl.mistate))
+end
+
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
 function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize caller_types))
@@ -44,32 +52,26 @@ function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize 
         _signature = signature(caller_type, caller_types)
         statement = uppercasefirst(string(c))
 
-        log_background_repl(() -> (@info "$statement `$_signature`"), p)
+        log_background_repl(() -> (@info "$statement `$_signature`"), p.background_repl)
     end
 end
 
-function log_background_repl(f, is_background_repl::Bool)
-    if is_background_repl
+function log_background_repl(f, background_repl::Bool)
+    if background_repl
+        active_repl = Base.active_repl
+        refresh_line = typeof(active_repl).name.module.LineEdit.refresh_line
+        mistate = active_repl.mistate
+
         sleep(0.01)
+        refresh_line(mistate)
         print(stderr, "\r\33[K")
     end
 
     f()
 
-    if is_background_repl
-        active_repl = Base.active_repl
-        println(stderr, "\33[A")
-        typeof(active_repl).name.module.LineEdit.refresh_line(active_repl.mistate)
-    end
+    background_repl && refresh_line(mistate)
+    nothing
 end
-log_background_repl(f, p::Parameters) = log_background_repl(f, p.is_background && p.is_repl)
-
-function log_foreground_repl(f, is_foreground_repl::Bool)
-    is_foreground_repl && println(stderr)
-    f()
-    is_foreground_repl ? print(stderr, "\33[A") : nothing
-end
-log_foreground_repl(f, p::Parameters) = log_foreground_repl(f, !p.is_background && p.is_repl)
 
 function round_time(x::Float64)
     whole, fraction = split(string(max(0.0, round(x; digits = 4))), '.')
@@ -98,3 +100,13 @@ subtypes!(abstract_types::Vector{Type}, ::UnionAll, ::Parameters) = abstract_typ
 subtypes!(abstract_types::Vector{Type}, x::Union, p::Parameters) = append!(
     abstract_types, get!(() -> uniontypes(x), p.union_type_cache, x)
 )
+
+function wait_for_repl()
+    _time = time()
+
+    while !(repl_ready = is_repl_ready()) && time() - _time < 10
+        sleep(0.1)
+    end
+
+    repl_ready ? nothing : error("Timed out waiting for REPL to load")
+end

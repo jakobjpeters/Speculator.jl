@@ -22,8 +22,8 @@ end
 const data_path, time_path = ARGS
 const predicate, x, limit = load_data(data_path)
 
-trial(is_dry) = @elapsed initialize_parameters(
-    x, false, is_dry, false, false, limit, "", predicate, silent
+trial(dry) = @elapsed initialize_parameters(x, "", false;
+    dry, limit, predicate, background_repl = false, verbosity = silent
 )
 
 trial(true)

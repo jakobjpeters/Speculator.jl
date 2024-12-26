@@ -14,19 +14,7 @@ function (is::InputSpeculator)(x)
     end
 end
 
-is_repl_ready() = isdefined(Base, :active_repl_backend)
-
 log_input_speculator() = @info "The input speculator has been installed into the REPL"
-
-function wait_for_repl()
-    _time = time()
-
-    while !(_is_repl_ready = is_repl_ready()) && time() - _time < 10
-        sleep(0.1)
-    end
-
-    _is_repl_ready
-end
 
 function install_speculator!(
     (@nospecialize predicate), ast_transforms::Vector{Any}, is_background::Bool;
@@ -34,7 +22,7 @@ function install_speculator!(
     push!(ast_transforms, InputSpeculator(parameters, predicate))
 
     if is_background log_background_repl(log_input_speculator, true)
-    else log_foreground_repl(log_input_speculator, true)
+    else log_input_speculator()
     end
 end
 
@@ -77,15 +65,10 @@ function install_speculator(predicate = default_predicate; background::Bool = tr
             install_speculator!(predicate, ast_transforms, false; background, parameters...)
         else
             errormonitor(@spawn begin
-                if wait_for_repl()
-                    install_speculator!(
-                        predicate, Base.active_repl_backend.ast_transforms, true;
-                    background, parameters...)
-                else
-                    log_background_repl(true) do
-                        @info "The input speculator has failed to be installed into the REPL"
-                    end
-                end
+                wait_for_repl()
+                install_speculator!(
+                    predicate, Base.active_repl_backend.ast_transforms, true;
+                background, parameters...)
             end)
             nothing
         end
@@ -108,7 +91,5 @@ julia> uninstall_speculator()
 """
 uninstall_speculator() = if isinteractive() && is_repl_ready()
     uninstall_speculator!(Base.active_repl_backend.ast_transforms)
-    log_foreground_repl(true) do
-        @info "The input speculator has been uninstalled from the REPL"
-    end
+    @info "The input speculator has been uninstalled from the REPL"
 end

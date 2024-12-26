@@ -6,7 +6,7 @@ function log_warn(p::Parameters, caller_type::Type, (@nospecialize compilable_ty
 
         log_background_repl(() -> (
             @warn "Compilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-        ), p)
+        ), p.background_repl)
     end
 end
 
@@ -69,11 +69,11 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
 
             if !skip
                 caller_type = Typeof(x)
-                dry = p.is_dry
+                dry = p.dry
 
                 if !dry
                     file = p.file
-                    is_open = isopen(file)
+                    _open = isopen(file)
                     specialization_types = IdSet{Type}()
 
                     for specialization ∈ specializations(m)
@@ -88,7 +88,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                         log_debug(p, skipped, caller_type, compilable_types)
                     elseif precompile(signature_type)
                         log_debug(p, compiled, caller_type, compilable_types)
-                        if is_open println(file, "precompile(", signature_type, ')') end
+                        if _open println(file, "precompile(", signature_type, ')') end
                     else log_warn(p, caller_type, compilable_types)
                     end
                 end
@@ -148,43 +148,28 @@ search_all_modules(::AllModules, p::Parameters) = for _module ∈ loaded_modules
 end
 search_all_modules((@nospecialize x), p::Parameters) = search(x, p)
 
-log_review((@nospecialize x), p::Parameters) = log_foreground_repl(p) do
-    elapsed = @elapsed search_all_modules(x, p)
+function initialize_parameters(
+    (@nospecialize x), path::String, save::Bool; (@nospecialize parameters...)
+)
+    open(save ? path : tempname(); write = true) do file
+        save || close(file)
+        _parameters = Parameters(; file, parameters...)
+        elapsed = @elapsed search_all_modules(x, _parameters)
 
-    if review ⊆ p.verbosity
-        log_background_repl(p) do
-            _counters = p.counters
-            _compiled, _generic, _skipped, _warned = map(s -> _counters[s], counters)
-            generated = _compiled + _skipped + _warned
-            seconds = round_time(elapsed)
-            header = "Generated `$generated` methods from `$_generic` generic methods in `$seconds` seconds"
+        if review ⊆ _parameters.verbosity
+            log_background_repl(_parameters.background_repl) do
+                _counters = _parameters.counters
+                _compiled, _generic, _skipped, _warned = map(s -> _counters[s], counters)
+                generated = _compiled + _skipped + _warned
+                seconds = round_time(elapsed)
+                header = "Generated `$generated` methods from `$_generic` generic methods in `$seconds` seconds"
 
-            if p.is_dry @info "$header"
-            else
-                @info "$header\nCompiled `$_compiled`\nSkipped  `$_skipped`\nWarned   `$_warned`"
+                if _parameters.dry @info "$header"
+                else
+                    @info "$header\nCompiled `$_compiled`\nSkipped  `$_skipped`\nWarned   `$_warned`"
+                end
             end
         end
-    end
-end
-
-function initialize_parameters(
-    (@nospecialize x),
-    generate,
-    is_background::Bool,
-    is_dry::Bool,
-    is_repl::Bool,
-    limit::Int,
-    path::String,
-    (@nospecialize predicate),
-    verbosity::Verbosity
-)
-    open(generate ? path : tempname(); write = true) do file
-        generate || close(file)
-        parameters = Parameters(;
-            file, is_background, is_dry, is_repl, limit, predicate, verbosity
-        )
-        is_background ? errormonitor(@spawn log_review(x, parameters)) : log_review(x, parameters)
-        nothing
     end
 end
 
@@ -282,17 +267,24 @@ function speculate(predicate, value;
 )
     @nospecialize
     limit > 0 || error("The `limit` must be greater than `0`")
-    is_interactive, generate = isinteractive(), !(dry || isempty(path))
+    interactive, save = isinteractive(), !(dry || isempty(path))
 
-    if generate || is_interactive || (@ccall jl_generating_output()::Cint) == 1
-        is_repl = is_interactive && isdefined(Base, :active_repl)
-        initialize_parameters(
-            value, generate, background, dry, is_repl, limit, path, predicate, verbosity
-        )
-    else
-        log_foreground_repl(!background && is_interactive && isdefined(Base, :active_repl)) do
-            @warn "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save a workload"
+    if interactive || save || (@ccall jl_generating_output()::Cint) == 1
+        if background
+            errormonitor(@spawn begin
+                (background_repl = interactive && verbosity != silent) && wait_for_repl()
+                initialize_parameters(value, path, save;
+                    background_repl, dry, limit, predicate, verbosity
+                )
+            end)
+            nothing
+        else
+            initialize_parameters(value, path, save;
+                dry, limit, predicate, verbosity, background_repl = false
+            )
         end
+    else
+        @warn "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save a workload"
     end
 end
 function speculate(x; parameters...)
