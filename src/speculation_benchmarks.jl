@@ -52,11 +52,11 @@ struct SpeculationBenchmark
         data_path, time_path = tempname(), tempname()
         times = Float64[]
 
-        @info "Instantiating temporary project environment"
+        @info "Instantiating temporary trial environment"
         run(Cmd([
             "julia",
             "--project=$new_directory",
-            joinpath(scripts, "setup_environment.jl"),
+            joinpath(scripts, "trial_environment.jl"),
             active_project(),
             new_directory
         ]))
