@@ -2,7 +2,6 @@
 module Speculator
 
 #=
-BUG: `@time speculate(Int; verbosity = review)`
 TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl?
     https://github.com/JuliaLang/PrecompileTools.jl/issues/28
 TODO: plot number of methods vs `limit` vs time
@@ -22,21 +21,20 @@ TODO: wait for a background call to `speculate` to finish before starting anothe
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
-TODO: check latency
 =#
 
 import Base:
     eltype, firstindex, getindex, isdisjoint, isempty,
     issetequal, issubset, iterate, lastindex, length, show
 using Base:
-    Iterators, Threads, IdSet, active_project, isdeprecated, issingletontype, isvarargtype,
+    Threads, IdSet, active_project, isdeprecated, issingletontype, isvarargtype,
     loaded_modules_array, mul_with_overflow, specializations, uniontypes, unsorted_names
-using .Iterators: product
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof
 using InteractiveUtils: subtypes
 using Serialization: serialize
 
+include("cartesian_products.jl")
 include("all_modules.jl")
 include("verbosities.jl")
 include("utilities.jl")

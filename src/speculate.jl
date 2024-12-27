@@ -81,7 +81,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                     end
                 end
 
-                for compilable_types ∈ product(product_types...)
+                for compilable_types ∈ CartesianProduct(product_types)
                     signature_type = Tuple{caller_type, compilable_types...}
 
                     if dry || any(==(signature_type), specialization_types)
