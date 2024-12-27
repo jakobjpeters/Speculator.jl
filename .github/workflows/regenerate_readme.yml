@@ -1,0 +1,24 @@
+
+name: Regenerate `README.md`
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '.github/workflows/regenerate_readme.yml'
+      - 'HEADER.md'
+      - 'docs/source/assets/logo.svg'
+      - 'docs/source/index.md'
+      - 'scripts/regenerate_readme.jl'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+      - run: julia --color=yes scripts/regenerate_readme.jl
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git diff --quiet || (git add . && git commit -m "Regenerate `README.md`")
+          git push
