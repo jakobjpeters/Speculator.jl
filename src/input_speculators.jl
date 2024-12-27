@@ -20,10 +20,7 @@ function install_speculator!(
     (@nospecialize predicate), ast_transforms::Vector{Any}, is_background::Bool;
 (@nospecialize parameters...))
     push!(ast_transforms, InputSpeculator(parameters, predicate))
-
-    if is_background log_background_repl(log_input_speculator, true)
-    else log_input_speculator()
-    end
+    log_background_repl(log_input_speculator, is_background)
 end
 
 """

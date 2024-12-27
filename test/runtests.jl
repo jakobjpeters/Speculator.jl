@@ -26,6 +26,7 @@ Aqua.test_all(Speculator)
         :develop,
         :instantiate,
         :isdeprecated,
+        :issingletontype,
         :isvarargtype,
         :loaded_modules_array,
         :mul_with_overflow,
@@ -96,6 +97,19 @@ end
         Union{}
     ]) == "nothing(::String, ::Type{String}, ::typeof(string), ::Type{<:AbstractString}, ::Union{LazyString, String}, ::Union{})"
 end
+
+@test !Speculator.is_repl_ready()
+
+ast_transforms = []
+@test_logs (:info, "The input speculator has been installed into the REPL") begin
+    Speculator.install_speculator!(Returns(true), ast_transforms, false)
+end
+@test only(ast_transforms) isa Speculator.InputSpeculator
+@test isempty(Speculator.uninstall_speculator!(ast_transforms))
+
+@test (uninstall_speculator(); true)
+
+@test repr(all_modules) == "all_modules::AllModules"
 
 @testset "`speculate_repl`" begin
     is = Speculator.InputSpeculator((), Returns(true))
