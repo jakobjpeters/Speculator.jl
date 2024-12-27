@@ -20,29 +20,26 @@ TODO: wait for a background call to `speculate` to finish before starting anothe
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
+TODO: remove dependency on InteractiveUtils.jl
 =#
 
-import Base:
-    eltype, firstindex, getindex, isdisjoint, isempty,
-    issetequal, issubset, iterate, lastindex, length, show
+import Base: isdisjoint, isempty, issetequal, issubset, iterate, show
 using Base:
-    Threads, IdSet, active_project, isdeprecated, issingletontype, isvarargtype,
-    loaded_modules_array, mul_with_overflow, specializations, uniontypes, unsorted_names
+    Threads, IdSet, isdeprecated, issingletontype, isvarargtype, loaded_modules_array,
+    mul_with_overflow, specializations, uniontypes, unsorted_names
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof
 using InteractiveUtils: subtypes
-using Serialization: serialize
 
 include("cartesian_products.jl")
 include("all_modules.jl")
 include("verbosities.jl")
 include("utilities.jl")
-include("speculation_benchmarks.jl")
 include("speculate.jl")
 include("input_speculators.jl")
 
 export
-    AllModules, SpeculationBenchmark, Verbosity,
+    AllModules, Verbosity,
     all_modules, debug, review, silent, warn, install_speculator, speculate, uninstall_speculator
 
 speculate(Speculator; limit = 4)

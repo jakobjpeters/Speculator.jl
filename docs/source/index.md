@@ -55,58 +55,11 @@ julia> i(::Union{String, Symbol}, ::Union{String, Symbol}) = nothing;
 [ Info: Compiled `Main.i(::String, ::String)`
 ```
 
-## Case Study
-
-Consider [Plots.jl](https://github.com/JuliaPlots/Plots.jl), the go-to example when discussing
-latency in Julia and the substantial improvements made to the time-to-first-X problem.
-
-```julia-repl
-julia> using Plots
-
-julia> @elapsed plot(1)
-0.106041791
-```
-
-This call has very low latency, demonstrating that code
-for core functions has been effectively precompiled.
-However, it is challenging to manually identify an exhaustive set of methods to precompile.
-Speculator.jl can do this automatically.
-
-```julia-repl
-julia> @elapsed using Speculator
-0.040658097
-
-julia> SpeculationBenchmark(Plots)
-Precompilation benchmark with `8` samples:
-  Mean:    `5.1130`
-  Median:  `5.1546`
-  Minimum: `4.7240`
-  Maximum: `5.5401`
-```
-
-The `SpeculationBenchmark` estimates the compilation time that `speculate` saves.
-This case uses the minimum `target`, which only compiles methods of public
-functions, types, and the types of values, recursively for public modules.
-Although there are numerous additional targets, this target only precompiles a subset
-of the methods that are accessible to users as part of the Plots.jl public interface.
-This can be verified using `speculate(Plots; verbosity = debug | review)`.
-Therefore, including this precompilation workload in Plots.jl or running it in the background
-of an interactive session can save up to five seconds of compilation time per session.
-Testing and selecting additional targets can save even more time.
-
-If instead, the Plots.jl workload did not precompile any new methods,
-using Speculator.jl would not meaningfully lengthen loading time.
-The package itself takes a fraction of a second to load in a package or interactive session.
-Running a workload in the background also only takes a fraction of a second to initiate.
-Therefore, using Speculator.jl has a high benefit to
-cost ratio in terms of compilation and loading time.
-
 ## Features
 
 - Automatically generate a compilation workload from modules and callable objects.
     - Configurable to run in the background, select precompilation targets, and write to a file.
     - Can be ran in the REPL after each input.
-- Benchmark the compilation time of a workload.
 
 ### Planned
 

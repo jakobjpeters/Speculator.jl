@@ -45,7 +45,7 @@ end
 
 is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
 
-function log_debug(p::Parameters, c::Counter, caller_type::Type, (@nospecialize caller_types))
+function log_debug(p::Parameters, c::Counter, caller_type::Type, caller_types::Vector{Type})
     p.counters[c] += 1
 
     if debug ⊆ p.verbosity
@@ -78,8 +78,7 @@ function round_time(x::Float64)
     whole * '.' * rpad(fraction, 4, '0')
 end
 
-function signature(caller_type::Type, @nospecialize compilable_types)
-    @nospecialize
+function signature(caller_type::Type, compilable_types::Vector{Type})
     s = join(map(type -> "::" * string(type), compilable_types), ", ")
     signature(caller_type) * '(' * s * ')'
 end

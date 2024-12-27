@@ -22,10 +22,10 @@ Aqua.test_all(Speculator)
         :TypeofBottom,
         :Typeof,
         :activate,
-        :active_project,
         :add,
         :develop,
         :instantiate,
+        :isdeprecated,
         :isvarargtype,
         :loaded_modules_array,
         :mul_with_overflow,
@@ -55,73 +55,46 @@ end
     ])
 end
 
-@testset "`log_review`" begin
-    open(tempname(); write = true) do file
-        p = Speculator.Parameters(
-            Dict(map(o -> o => 0, [
-                Speculator.compiled,
-                Speculator.generated,
-                Speculator.generic,
-                Speculator.skipped,
-                Speculator.warned
-            ])),
-            false,
-            file,
-            true,
-            false,
-            false,
-            1,
-            Speculator.default_predicate,
-            IdDict{Type, Pair{Vector{Type}, Bool}}(),
-            Base.IdSet{Any}(),
-            IdDict{DataType, Vector{Any}}(),
-            IdDict{Union, Vector{Any}}(),
-            review,
-        )
+@testset "`initialize_parameters`" begin
+    @test_logs (
+        :info,
+        r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds$"
+    ) Speculator.initialize_parameters(nothing, "", false;
+        background_repl = false,
+        dry = true,
+        limit = 1,
+        predicate = Speculator.default_predicate,
+        verbosity = review
+    )
 
-        @test_logs (
-            :info,
-            r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds\nCompiled `0`\nSkipped  `0`\nWarned   `0`$"
-        ) Speculator.log_review(nothing, p)
-    end
+    @test_logs (
+        :info,
+        r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds\nCompiled `0`\nSkipped  `0`\nWarned   `0`$"
+    ) Speculator.initialize_parameters(nothing, "", false;
+        background_repl = false,
+        dry = false,
+        limit = 1,
+        predicate = Speculator.default_predicate,
+        verbosity = review
+    )
 end
 
 @testset "`signature`" begin
-    @test Speculator.signature(String, ()) == "(::String)()"
-    @test Speculator.signature(Type{String}, ()) == "String()"
-    @test Speculator.signature(typeof(string), ()) == "string()"
-    @test Speculator.signature(Type{<:AbstractString}, ()) == "(::Type{<:AbstractString})()"
-    @test Speculator.signature(Union{String, LazyString}, ()) == "Union{LazyString, String}()"
-    @test Speculator.signature(Union{}, ()) == "Union{}()"
-    @test Speculator.signature(Nothing, (
+    types = Type[]
+    @test Speculator.signature(String, types) == "(::String)()"
+    @test Speculator.signature(Type{String}, types) == "String()"
+    @test Speculator.signature(typeof(string), types) == "string()"
+    @test Speculator.signature(Type{<:AbstractString}, types) == "(::Type{<:AbstractString})()"
+    @test Speculator.signature(Union{String, LazyString}, types) == "Union{LazyString, String}()"
+    @test Speculator.signature(Union{}, types) == "Union{}()"
+    @test Speculator.signature(Nothing, [
         String,
         Type{String},
         typeof(string),
         Type{<:AbstractString},
         Union{String, LazyString},
         Union{}
-    )) == "nothing(::String, ::Type{String}, ::typeof(string), ::Type{<:AbstractString}, ::Union{LazyString, String}, ::Union{})"
-end
-
-@testset "`SpeculationBenchmark`" begin
-    sb = SpeculationBenchmark(Test)
-    times = sb.times
-
-    @test all(≥(0), sb)
-
-    for i in eachindex(times)
-        times[i] = 0.0
-    end
-
-    @test eltype(sb) <: Float64
-    @test firstindex(sb) == 1
-    @test (sb[1]; true)
-    @test iterate(sb) == (0.0, 2)
-    @test iterate(sb, 2) == (0.0, 3)
-    @test lastindex(sb) == 8
-    @test length(sb) == 8
-    @test sprint(show, MIME"text/plain"(), sb) == "Precompilation benchmark with `8` samples:\n  Mean:    `0.0000`\n  Median   `0.0000`\n  Minimum: `0.0000`\n  Maximum: `0.0000`"
-    # TODO: test display of mean, median, minimum, and maximum
+    ]) == "nothing(::String, ::Type{String}, ::typeof(string), ::Type{<:AbstractString}, ::Union{LazyString, String}, ::Union{})"
 end
 
 @testset "`speculate_repl`" begin
@@ -144,8 +117,8 @@ end
     end
 
     _is = Speculator.InputSpeculator((
-        is_background = true,
-        is_dry = true,
+        background = true,
+        dry = true,
         limit = 8,
         path = "precompile.jl",
         verbosity = debug ∪ review
@@ -232,7 +205,7 @@ path = tempname()
 @test issorted(map(limit -> count_methods(all_modules; limit), 1:4))
 
 @test count_methods(Returns(false), all_modules) == 0
-@test count_methods(Returns(false), () -> nothing) == 0
+@test count_methods(Returns(false), () -> nothing) == 1
 
 rm(path)
 
