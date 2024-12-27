@@ -11,7 +11,6 @@ TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
     - `length(PrecompileSignatures.precompilables(Base.loaded_modules_array()))`
 TODO: benchmark time to search for every possible method:
     `speculate(all_modules; verbosity = review)`
-TODO: figure out how `julia --trace-compile=precompile.jl` works
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?

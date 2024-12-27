@@ -27,7 +27,8 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             for i ∈ eachindex(parameter_types)
                 parameter_type = parameter_types[i]
                 compilable_types = begin
-                    if is_subset(1, no_specialize >> (i - 1)) Type[parameter_type]
+                    if isconcretetype(parameter_type) || is_subset(1, no_specialize >> (i - 1))
+                        Type[parameter_type]
                     else
                         new_compilable_types, skip = get!(product_cache, parameter_type) do
                             abstract_types = Type[parameter_type]
@@ -38,15 +39,9 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                                 branch = pop!(abstract_types)
 
                                 if isconcretetype(branch)
-                                    name = branch.name
-                                    _module, _name = name.module, name.name
-                                    if get!(predicate_cache, _module => _name) do
-                                        predicate(_module, name)
-                                    end
-                                        push!(new_compilable_types, branch)
-                                        new_skip = new_skip || length(new_compilable_types) > limit
-                                        new_skip && break
-                                    end
+                                    push!(new_compilable_types, branch)
+                                    new_skip = new_skip || length(new_compilable_types) > limit
+                                    new_skip && break
                                 else subtypes!(abstract_types, branch, p)
                                 end
                             end
@@ -113,9 +108,7 @@ function check_searched((@nospecialize x::Function), p::Parameters)
     end
 end
 check_searched(x::Type, p::Parameters) = _check_searched(x, p.searched_types)
-function check_searched((@nospecialize x), p::Parameters)
-    _check_searched(typeof(x), p.searched_callables)
-end
+check_searched((@nospecialize x), p::Parameters) = _check_searched(typeof(x), p.searched_callables)
 
 function search(x::Module, p::Parameters)
     predicate_cache = p.predicate_cache
@@ -195,8 +188,8 @@ To measure the duration of compilation in a workload, see also [`SpeculationBenc
     This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
     Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
     whereas returning `false` specifies to ignore the value.
-    This is first called when searching the names of a `Module`,
-    and later called when searching for concrete types of method parameters.
+    This is called when searching the names of a `Module` if the
+    given module and name satisfy `isdefined` and `!isdeprecated`.
     The default predicate `Returns(true)` will search everything possible,
     up to the generic `limit`, whereas the predicate
     `Returns(false)` will not generate any methods.
