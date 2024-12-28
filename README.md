@@ -19,13 +19,7 @@
 
 ## Introduction
 
-Speculator.jl is a tool to reduce latency by automatically
-generating and running compilation workloads.
-
-Code needs to be compiled, either upon the installation of a package or as needed during runtime.
-In the former case, this can be used in a package as a supplement or alternative to
-[PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl).
-In the latter case, it can be used in a `startup.jl` file or interactively in the REPL.
+Speculator.jl reduces latency by automatically searching for compilation directives.
 
 ## Usage
 
@@ -34,7 +28,7 @@ In the latter case, it can be used in a `startup.jl` file or interactively in th
 ```julia-repl
 julia> using Pkg: add
 
-julia> add(; url = "https://github.com/jakobjpeters/Speculator.jl")
+julia> add("Speculator")
 
 julia> using Speculator
 ```
@@ -73,22 +67,17 @@ julia> i(::Union{String, Symbol}, ::Union{String, Symbol}) = nothing;
 
 ## Features
 
-- Automatically generate a compilation workload from modules and callable objects.
-    - Configurable to run in the background, select precompilation targets, and write to a file.
-    - Can be ran in the REPL after each input.
+- Filter values
+- Run in the background
+- Handle abstractly typed methods
+- Save compilation directives to a file
+- Show logging statements
+- Run in REPL after each input
 
 ### Planned
 
 - Disable during development using Preferences.jl?
 - Support for `UnionAll` types?
-
-## Acknowledgements
-
-Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
-
-The preexisting package PrecompileSignatures.jl implements similar functionality,
-notably that `PrecompileSignatures.@precompile_signatures ::Module`
-is roughly equivalent to `Speculator.speculate(::Module)`.
 
 ## Similar Packages
 
@@ -102,3 +91,14 @@ is roughly equivalent to `Speculator.speculate(::Module)`.
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
 - [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
     - [SnoopCompileCore.jl](https://github.com/timholy/SnoopCompile.jl/tree/master/SnoopCompileCore)
+
+## Acknowledgements
+
+Credit to [Cameron Pfiffer](https://github.com/cpfiffer) for the initial idea.
+
+The preexisting package PrecompileSignatures.jl implements similar functionality,
+notably that `PrecompileSignatures.@precompile_signatures ::Module`
+is roughly equivalent to `Speculator.speculate(::Module)`.
+
+The idea to compile concrete method signatures has also been brought up in
+[PrecompileTools.jl #28](https://github.com/JuliaLang/PrecompileTools.jl/issues/28).
