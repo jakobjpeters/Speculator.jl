@@ -24,9 +24,11 @@ function install_speculator!(
 end
 
 """
-    install_speculator(predicate = Returns(true); background::Bool = true, parameters...)
+    install_speculator(
+        predicate = (m, _) -> m ∉ [Base, Core]; background::Bool = true,
+    parameters...)
 
-Install an input speculator that calls
+Install a hook that calls
 `speculate(predicate,\u00A0value;\u00A0background,\u00A0parameters...)`
 on each input `value` in the REPL.
 
@@ -53,7 +55,9 @@ julia> g(::Union{String, Symbol}) = nothing;
 [ Info: Compiled `Main.Example.g(::Symbol)`
 ```
 """
-function install_speculator(predicate = default_predicate; background::Bool = true, parameters...)
+function install_speculator(
+    predicate = (m, _) -> m ∉ [Base, Core]; background::Bool = true, parameters...
+)
     @nospecialize
     if isinteractive()
         if is_repl_ready()

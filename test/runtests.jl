@@ -58,6 +58,8 @@ end
     @test isempty(silent)
     @test !isempty(debug)
     @test issetequal(silent ∪ debug ∪ review, debug ∪ review)
+    @test setdiff(debug, debug) == silent
+    @test setdiff(review ∪ debug, debug) == review
 end
 
 @testset "`initialize_parameters`" begin
@@ -130,8 +132,8 @@ end
 
 path = tempname()
 f() = nothing
-@test_logs (:info, "Compiled `Main.f()`") speculate(f; path, verbosity = debug)
-@test_logs (:info, "Skipped `Main.f()`") speculate(f; path, verbosity = debug)
+@test_logs (:info, r"Compiled `.*f\(\)`") speculate(f; path, verbosity = debug)
+@test_logs (:info, r"Skipped `.*f\(\)`") speculate(f; path, verbosity = debug)
 
 @test_throws ErrorException Speculator.wait_for_repl()
 

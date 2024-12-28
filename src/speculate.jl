@@ -170,7 +170,7 @@ end
     speculate(predicate, value; parameters...)
     speculate(value; parameters...)
 
-Search for compilation directives.
+Search for compilable methods.
 
 See also [`install_speculator`](@ref).
 
@@ -178,7 +178,7 @@ See also [`install_speculator`](@ref).
     Use this in a package to reduce latency.
 
 !!! note
-    Speculation only runs when called during precompilation or an interactive session,
+    This only runs when called during precompilation or an interactive session,
     or when writing precompilation directives to a file.
 
 # Parameters
@@ -189,10 +189,9 @@ See also [`install_speculator`](@ref).
     whereas returning `false` specifies to ignore the value.
     This is called when searching the names of a `Module` if the
     given module and name satisfy `isdefined` and `!isdeprecated`.
-    The default predicate `Returns(true)` will search everything possible,
-    up to the generic `limit`, whereas the predicate
-    `Returns(false)` will only generate methods from
-    callable values passed directly to `speculate`.
+    The default predicate `Returns(true)` will search every value,
+    whereas the predicate `Returns(false)` will only generate
+    methods from callable values passed directly to `speculate`.
     Some useful predicates include `Base.isexported`,
     `Base.ispublic`, and checking properties of the value itself.
 - `value`:
@@ -205,7 +204,7 @@ See also [`install_speculator`](@ref).
 # Keyword parameters
 
 - `background::Bool = false`:
-    Specifies whether to precompile on a thread in the `:default` pool.
+    Specifies whether to run on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.

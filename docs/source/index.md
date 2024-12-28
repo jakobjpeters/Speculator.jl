@@ -3,7 +3,7 @@
 
 ## Introduction
 
-Speculator.jl reduces latency by automatically searching for compilation directives.
+Speculator.jl reduces latency by automatically searching for compilable methods.
 
 ## Usage
 
