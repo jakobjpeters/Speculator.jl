@@ -186,7 +186,7 @@ See also [`install_speculator`](@ref).
 - `predicate = Returns(true)`:
     This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
     Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
-    whereas returning `false` specifies to ignore the value.
+    whereas returning `false` specifies to skip the value.
     This is called when searching the names of a `Module` if the
     given module and name satisfy `isdefined` and `!isdeprecated`.
     The default predicate `Returns(true)` will search every value,
@@ -208,15 +208,15 @@ See also [`install_speculator`](@ref).
     The number of available threads can be determined using `Threads.nthreads(:default)`.
 - `dry::Bool = false`:
     Specifies whether to run `precompile` on generated method signatures.
-    This is useful for testing workloads with `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
-    Methods that are known to be specialized are skipped.
+    This is useful for testing with `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
+    Method signatures that are known to be specialized are skipped.
     Note that `dry` must be `false` to save the directives to a file with the `path` parameter.
 - `limit::Int = $default_limit`:
     Specifies the maximum number of compilable methods that are generated from a generic method.
     Values less than `1` will throw an error.
     Otherwise, method signatures will be generated from the Cartesian product each parameter type.
-    Types marked with `@nospecialize` are used directly.
-    Otherwise, compilable types are obtained from the subtypes of `DataType` and `Union`.
+    Concrete types and those marked with `@nospecialize` are used directly.
+    Otherwise, concrete types are obtained from the subtypes of `DataType` and `Union`.
     Setting an appropriate value prevents spending too
     much time precompiling a single generic method.
 - `path::String = ""`:
