@@ -54,6 +54,10 @@ end
     @test all(((v, n),) -> string(v) == n * "::Verbosity", [
         debug => "debug", review => "review", silent => "silent", warn => "warn"
     ])
+    @test isdisjoint(debug, review)
+    @test isempty(silent)
+    @test !isempty(debug)
+    @test issetequal(silent ∪ debug ∪ review, debug ∪ review)
 end
 
 @testset "`initialize_parameters`" begin
@@ -111,6 +115,26 @@ end
 
 @test repr(all_modules) == "all_modules::AllModules"
 
+@test_warn "Compilation failed, please file a bug report in Speculator.jl for:\n" begin
+    open(tempname(); create = true) do file
+        Speculator.log_warn(Speculator.Parameters(;
+            file,
+            background_repl = false,
+            dry = false,
+            limit = 1,
+            predicate = Returns(true),
+            verbosity = warn
+        ), typeof(string), Type[])
+    end
+end
+
+path = tempname()
+f() = nothing
+@test_logs (:info, "Compiled `Main.f()`") speculate(f; path, verbosity = debug)
+@test_logs (:info, "Skipped `Main.f()`") speculate(f; path, verbosity = debug)
+
+@test_throws ErrorException Speculator.wait_for_repl()
+
 @testset "`speculate_repl`" begin
     is = Speculator.InputSpeculator((), Returns(true))
     x = Base.remove_linenums!(is(true))
@@ -134,10 +158,10 @@ end
         background = true,
         dry = true,
         limit = 8,
-        path = "precompile.jl",
+        path = tempname(),
         verbosity = debug ∪ review
     ), Base.isexported)
-    _x = Base.remove_linenums!(_is(:(f() = true)))
+    _x = Base.remove_linenums!(_is(:(g() = true)))
     _lines = split(string(_x), '\n')
 
     _b = false
@@ -146,10 +170,10 @@ end
 
     for (line, regex) in zip(_lines, [
         r"begin",
-        r" {4}var\"##\d+\" = \(f\(\) = begin",
+        r" {4}var\"##\d+\" = \(g\(\) = begin",
         r" {16}true",
         r" {12}end\)",
-        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \"precompile.jl\", verbosity = \(debug ∪ review\)::Verbosity\)\.\.\.\)",
+        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \".*\", verbosity = \(debug ∪ review\)::Verbosity\)\.\.\.\)",
         r" {4}var\"##\d+\"",
         r"end"
     ])
@@ -203,7 +227,7 @@ visit(count_method_analysis)
 @test method_analysis_count < speculator_count
 @test precompile_signatures_count < speculator_count
 
-path = "precompile.jl"
+path = tempname()
 rm(path; force = true)
 s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
 @test_warn "$s" speculate(X; path, dry = true)
