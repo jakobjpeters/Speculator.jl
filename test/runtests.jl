@@ -205,7 +205,7 @@ visit(count_method_analysis)
 
 path = "precompile.jl"
 rm(path; force = true)
-s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save a workload"
+s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
 @test_warn "$s" speculate(X; path, dry = true)
 @test !isfile(path)
 speculate(X; path)

@@ -9,8 +9,6 @@ TODO: tutorial to create a system image?
 TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
     - `speculate(all_modules; dry = true)`
     - `length(PrecompileSignatures.precompilables(Base.loaded_modules_array()))`
-TODO: benchmark time to search for every possible method:
-    `speculate(all_modules; verbosity = review)`
 TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?
@@ -21,6 +19,8 @@ TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
 TODO: remove dependency on InteractiveUtils.jl
+TODO: https://github.com/JuliaLang/julia/issues/28808
+TODO: https://github.com/JuliaLang/julia/issues/52677
 =#
 
 import Base: isdisjoint, isempty, issetequal, issubset, iterate, show

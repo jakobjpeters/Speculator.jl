@@ -1,10 +1,10 @@
 
-function log_warn(p::Parameters, caller_type::Type, (@nospecialize compilable_types))
+function log_warn(p::Parameters, caller_type::Type, compilable_types::Vector{Type})
     if warn ⊆ p.verbosity
         _signature = signature(caller_type, compilable_types)
         p.counters[warned] += 1
 
-        log_background_repl(() -> (
+        log_repl(() -> (
             @warn "Compilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
         ), p.background_repl)
     end
@@ -150,7 +150,7 @@ function initialize_parameters(
         elapsed = @elapsed search_all_modules(x, _parameters)
 
         if review ⊆ _parameters.verbosity
-            log_background_repl(_parameters.background_repl) do
+            log_repl(_parameters.background_repl) do
                 _counters = _parameters.counters
                 _compiled, _generic, _skipped, _warned = map(s -> _counters[s], counters)
                 generated = _compiled + _skipped + _warned
@@ -170,12 +170,12 @@ end
     speculate(predicate, value; parameters...)
     speculate(value; parameters...)
 
-Generate a compilation a workload.
+Search for compilation directives.
 
 See also [`install_speculator`](@ref).
 
 !!! tip
-    Use this in a package to reduce latency for its users.
+    Use this in a package to reduce latency.
 
 !!! note
     Speculation only runs when called during precompilation or an interactive session,
@@ -191,15 +191,16 @@ See also [`install_speculator`](@ref).
     given module and name satisfy `isdefined` and `!isdeprecated`.
     The default predicate `Returns(true)` will search everything possible,
     up to the generic `limit`, whereas the predicate
-    `Returns(false)` will not generate any methods.
-    Some useful predicates include `Base.isexported`, `Base.ispublic`,
-    checking properties of the value itself, and a combination thereof.
+    `Returns(false)` will only generate methods from
+    callable values passed directly to `speculate`.
+    Some useful predicates include `Base.isexported`,
+    `Base.ispublic`, and checking properties of the value itself.
 - `value`:
     When given a `Module`, `speculate` will recursively search its contents
     using `names(::Module;\u00A0all\u00A0=\u00A0true)`, for each name that is
     not deprecated, is not an external module, and satisifes the `predicate`.
     For other values, each of their generic `methods`
-    are searched for corresponding compilable signatures.
+    are searched for corresponding compilable methods.
 
 # Keyword parameters
 
@@ -210,21 +211,22 @@ See also [`install_speculator`](@ref).
     Specifies whether to run `precompile` on generated method signatures.
     This is useful for testing workloads with `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
     Methods that are known to be specialized are skipped.
-    Note that `dry` must be `false` to save the workload to a file with the `path` parameter.
+    Note that `dry` must be `false` to save the directives to a file with the `path` parameter.
 - `limit::Int = $default_limit`:
     Specifies the maximum number of compilable methods that are generated from a generic method.
     Values less than `1` will throw an error.
     Otherwise, method signatures will be generated from the Cartesian product each parameter type.
     Types marked with `@nospecialize` are used directly.
     Otherwise, compilable types are obtained from the subtypes of `DataType` and `Union`.
-    This prevents spending too much time precompiling a single generic method.
+    Setting an appropriate value prevents spending too
+    much time precompiling a single generic method.
 - `path::String = ""`:
-    Saves a workload by writing each successful precompilation directive
-    to a file if the `path` is not empty and it is not a `dry` run.
+    Saves successful precompilation directives to a file
+    if the `path` is not empty and it is not a `dry` run.
     Note that these directives may require loading additional modules to run.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
-    If this function is used in a package as a precompilation workload,
+    If this function is used to precompile methods in a package,
     this should be set to [`silent`](@ref) or [`warn`](@ref).
     See also [`Verbosity`](@ref).
 
@@ -276,7 +278,7 @@ function speculate(predicate, value;
             )
         end
     else
-        @warn "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save a workload"
+        @warn "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
     end
 end
 function speculate(x; parameters...)

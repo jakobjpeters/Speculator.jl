@@ -2,11 +2,10 @@
 @enum Counter compiled generic skipped warned
 
 const counters = instances(Counter)
-
+const default_limit = 1
+const default_predicate = Returns(true)
 const searched_callables = IdSet{DataType}
-
 const searched_functions = IdSet{Function}
-
 const searched_types = IdSet{Type}
 
 @kwdef struct Parameters
@@ -28,12 +27,6 @@ const searched_types = IdSet{Type}
     searched_methods::IdSet{Method} = IdSet{Method}()
 end
 
-const default_limit = 1
-
-const default_predicate = Returns(true)
-
-const default_trials = 8
-
 is_repl_ready() = (
     isdefined(Base, :active_repl_backend) &&
     isdefined(Base, :active_repl) &&
@@ -52,11 +45,11 @@ function log_debug(p::Parameters, c::Counter, caller_type::Type, caller_types::V
         _signature = signature(caller_type, caller_types)
         statement = uppercasefirst(string(c))
 
-        log_background_repl(() -> (@info "$statement `$_signature`"), p.background_repl)
+        log_repl(() -> (@info "$statement `$_signature`"), p.background_repl)
     end
 end
 
-function log_background_repl(f, background_repl::Bool)
+function log_repl(f, background_repl::Bool)
     if background_repl
         active_repl = Base.active_repl
         refresh_line = typeof(active_repl).name.module.LineEdit.refresh_line

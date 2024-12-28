@@ -20,11 +20,11 @@ function install_speculator!(
     (@nospecialize predicate), ast_transforms::Vector{Any}, is_background::Bool;
 (@nospecialize parameters...))
     push!(ast_transforms, InputSpeculator(parameters, predicate))
-    log_background_repl(log_input_speculator, is_background)
+    log_repl(log_input_speculator, is_background)
 end
 
 """
-    install_speculator(predicate = $default_predicate; background::Bool = true, parameters...)
+    install_speculator(predicate = Returns(true); background::Bool = true, parameters...)
 
 Install an input speculator that calls
 `speculate(predicate,\u00A0value;\u00A0background,\u00A0parameters...)`
