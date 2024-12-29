@@ -18,6 +18,7 @@ This type implements part of the `AbstractSet` interface.
 - `issubset(::Verbosity,\u00A0::Verbosity)`
 - `setdiff(::Verbosity,\u00A0::Verboosity...)`
 - `show(::IO,\u00A0::Verbosity)`
+- `symdiff(::Verbosity,\u00A0::Verbosity...)`
 - `union(::Verbosity,\u00A0::Verbosity...)`
 
 # Examples
@@ -105,6 +106,8 @@ const review = verbosity(2)
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
 will show warnings for failed calls to `precompile`.
+All warnings are considered a bug,
+and should be filed as an issue in Speculator.jl
 
 # Examples
 
@@ -141,4 +144,16 @@ function show(io::IO, v::Verbosity)
     end
 
     print(io, "::", Verbosity)
+end
+
+function symdiff(v::Verbosity, vs::Verbosity...)
+    counts = Dict(debug => 0, review => 0, warn => 0)
+
+    for verbosity in keys(counts)
+        for _v in [v, vs...]
+            (counts[verbosity] += verbosity ⊆ _v) > 1 && break
+        end
+    end
+
+    reduce(union, keys(filter!(==(1) ∘ last, counts)); init = silent)
 end

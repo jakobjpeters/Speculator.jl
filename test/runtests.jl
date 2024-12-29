@@ -60,6 +60,8 @@ end
     @test issetequal(silent ∪ debug ∪ review, debug ∪ review)
     @test setdiff(debug, debug) == silent
     @test setdiff(review ∪ debug, debug) == review
+    @test symdiff(review, review, debug) == debug
+    @test symdiff(review ∪ debug, debug ∪ warn, warn) == silent
 end
 
 @testset "`initialize_parameters`" begin
