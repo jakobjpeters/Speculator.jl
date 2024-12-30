@@ -18,23 +18,18 @@ Aqua.test_all(Speculator)
 
     @test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
         :IdSet,
-        :MethodList,
         :TypeofBottom,
         :Typeof,
-        :activate,
-        :add,
-        :develop,
-        :instantiate,
         :isdeprecated,
         :issingletontype,
         :isvarargtype,
         :loaded_modules_array,
         :mul_with_overflow,
-        :resolve,
         :specializations,
         :typename,
         :uniontypes,
-        :unsorted_names
+        :unsorted_names,
+        :unwrap_unionall
     )))
     @test isnothing(check_all_qualified_accesses_are_public(Speculator; ignore = (
         :active_repl, :active_repl_backend
@@ -61,7 +56,7 @@ end
     @test setdiff(debug, debug) == silent
     @test setdiff(review ∪ debug, debug) == review
     @test symdiff(review, review, debug) == debug
-    @test symdiff(review ∪ debug, debug ∪ warn, warn) == silent
+    @test symdiff(review ∪ debug, debug ∪ warn, warn ∪ review) == silent
 end
 
 @testset "`initialize_parameters`" begin
@@ -200,13 +195,13 @@ function count_methods(predicate, value; parameters...)
        speculate(predicate, value; path = tempname(), verbosity = review, parameters...)
    end
    close(pipe[2])
-   parse(Int, only(match(r"`(\d+)` generic", read(pipe, String)).captures))
+   parse.(Int, match(r"Generated `(\d+)` methods from `(\d+)`", read(pipe, String)).captures)
 end
 count_methods(value; parameters...) = count_methods(
     Speculator.default_predicate, value;
 parameters...)
 
-speculator_count = count_methods(all_modules)
+speculator_count = count_methods(all_modules)[2]
 precompile_signatures_count = length(
     PrecompileSignatures.precompilables(Base.loaded_modules_array(),
 PrecompileSignatures.Config(; split_unions = false)))
@@ -244,12 +239,10 @@ path = tempname()
 @test_broken (include(path); true)
 # include(x -> :(@test $x), path)
 
-@test issorted(map(limit -> count_methods(all_modules; limit), 1:4))
+@test issorted(map(limit -> count_methods(all_modules; limit)[2], 1:4))
 
-@test count_methods(Returns(false), all_modules) == 0
-@test count_methods(Returns(false), () -> nothing) == 1
-
-rm(path)
+@test count_methods(Returns(false), all_modules)[1] == 0
+@test count_methods(Returns(false), ::String -> nothing)[1] == 0
 
 # speculate(Base)
 # count precompiled + skipped

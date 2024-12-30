@@ -19,8 +19,6 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             skip = false
             limit = p.limit
             no_specialize = m.nospecialize
-            predicate_cache = p.predicate_cache
-            predicate = p.predicate
             product_cache = p.product_cache
             product_types = Vector{Type}[]
 
@@ -28,7 +26,9 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                 parameter_type = parameter_types[i]
                 compilable_types = begin
                     if isconcretetype(parameter_type) || is_subset(1, no_specialize >> (i - 1))
-                        Type[parameter_type]
+                        if check_predicate(parameter_type, p) Type[parameter_type]
+                        else (skip = true) && break
+                        end
                     else
                         new_compilable_types, skip = get!(product_cache, parameter_type) do
                             abstract_types = Type[parameter_type]
@@ -39,9 +39,11 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                                 branch = pop!(abstract_types)
 
                                 if isconcretetype(branch)
-                                    push!(new_compilable_types, branch)
-                                    new_skip = new_skip || length(new_compilable_types) > limit
-                                    new_skip && break
+                                    if check_predicate(branch, p)
+                                        push!(new_compilable_types, branch)
+                                        new_skip = new_skip || length(new_compilable_types) > limit
+                                        new_skip && break
+                                    end
                                 else subtypes!(abstract_types, branch, p)
                                 end
                             end
@@ -110,19 +112,24 @@ end
 check_searched(x::Type, p::Parameters) = _check_searched(x, p.searched_types)
 check_searched((@nospecialize x), p::Parameters) = _check_searched(typeof(x), p.searched_callables)
 
-function search(x::Module, p::Parameters)
-    predicate_cache = p.predicate_cache
-    predicate = p.predicate
+check_predicate(x::Module, name::Symbol, p::Parameters) = get!(
+    () -> p.predicate(x, name), p.predicate_cache, x => name
+)
+function check_predicate(x::DataType, p::Parameters)
+    type_name = typename(x)
+    check_predicate(type_name.module, type_name.name, p)
+end
+check_predicate(x::UnionAll, p::Parameters) = check_predicate(unwrap_unionall(x), p)
+check_predicate(x::Union, p::Parameters) = any(type -> check_predicate(type, p), uniontypes(x))
 
-    for name ∈ unsorted_names(x; all = true)
-        if (
-            isdefined(x, name) &&
-            !isdeprecated(x, name) &&
-            get!(() -> predicate(x, name), predicate_cache, x => name)
-        )
-            _x = getproperty(x, name)
-            check_module(_x, x) && search(_x, p)
-        end
+search(x::Module, p::Parameters) = for name ∈ unsorted_names(x; all = true)
+    if (
+        isdefined(x, name) &&
+        !isdeprecated(x, name) &&
+        check_predicate(x, name, p)
+    )
+        _x = getproperty(x, name)
+        check_module(_x, x) && search(_x, p)
     end
 end
 
@@ -183,15 +190,18 @@ See also [`install_speculator`](@ref).
 
 # Parameters
 
+    This is first called when searching the names of a `Module`,
+    and later called when searching for concrete types of method parameters.
+
 - `predicate = Returns(true)`:
     This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
     Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
     whereas returning `false` specifies to skip the value.
     This is called when searching the names of a `Module` if the
-    given module and name satisfy `isdefined` and `!isdeprecated`.
+    given module and name satisfy `isdefined` and `!isdeprecated`,
+    and is called when searching for types from method parameters.
     The default predicate `Returns(true)` will search every value,
-    whereas the predicate `Returns(false)` will only generate
-    methods from callable values passed directly to `speculate`.
+    whereas the predicate `Returns(false)` will not search any value.
     Some useful predicates include `Base.isexported`,
     `Base.ispublic`, and checking properties of the value itself.
 - `value`:

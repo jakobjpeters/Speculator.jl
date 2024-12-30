@@ -85,12 +85,28 @@ end
 signature(caller_type::UnionAll) = "(::" * repr(caller_type) * ')'
 signature(caller_type::Union{Union, TypeofBottom}) = repr(caller_type)
 
-subtypes!(abstract_types::Vector{Type}, x::DataType, p::Parameters) = append!(abstract_types, get!(
-    () -> filter!(subtype -> !(x <: subtype), subtypes(x)), p.subtype_cache, x
-))
+function _subtypes!(
+    f,
+    abstract_types::Vector{Type},
+    type::Union{DataType, Union},
+    cache,
+    p::Parameters
+)
+    append!(abstract_types, get!(
+        () -> filter!(subtype -> check_predicate(subtype, p), f()), cache, type
+    ))
+end
+
+subtypes!(abstract_types::Vector{Type}, type::DataType, p::Parameters) = _subtypes!(
+    () -> filter!(subtype -> !(type <: subtype), subtypes(type)),
+    abstract_types,
+    type,
+    p.subtype_cache,
+    p
+)
 subtypes!(abstract_types::Vector{Type}, ::UnionAll, ::Parameters) = abstract_types
-subtypes!(abstract_types::Vector{Type}, x::Union, p::Parameters) = append!(
-    abstract_types, get!(() -> uniontypes(x), p.union_type_cache, x)
+subtypes!(abstract_types::Vector{Type}, type::Union, p::Parameters) = _subtypes!(
+    () -> uniontypes(type), abstract_types, type, p.union_type_cache, p
 )
 
 function wait_for_repl()

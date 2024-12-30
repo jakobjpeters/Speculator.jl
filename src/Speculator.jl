@@ -17,16 +17,15 @@ TODO: rename `dry`?
 TODO: wait for a background call to `speculate` to finish before starting another?
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
-TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
 TODO: remove dependency on InteractiveUtils.jl
 TODO: https://github.com/JuliaLang/julia/issues/28808
 TODO: https://github.com/JuliaLang/julia/issues/52677
 =#
 
-import Base: isdisjoint, isempty, issetequal, issubset, iterate, show
+import Base: isdisjoint, isempty, issetequal, issubset, iterate, show, symdiff
 using Base:
     Threads, IdSet, isdeprecated, issingletontype, isvarargtype, loaded_modules_array,
-    mul_with_overflow, specializations, uniontypes, unsorted_names
+    mul_with_overflow, specializations, typename, uniontypes, unsorted_names, unwrap_unionall
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof
 using InteractiveUtils: subtypes
