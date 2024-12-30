@@ -20,6 +20,7 @@ Aqua.test_all(Speculator)
         :IdSet,
         :TypeofBottom,
         :Typeof,
+        :checked_mul,
         :isdeprecated,
         :issingletontype,
         :isvarargtype,

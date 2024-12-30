@@ -22,9 +22,9 @@ TODO: https://github.com/JuliaLang/julia/issues/28808
 TODO: https://github.com/JuliaLang/julia/issues/52677
 =#
 
-import Base: isdisjoint, isempty, issetequal, issubset, iterate, show, symdiff
+import Base: eltype, isdisjoint, isempty, issetequal, issubset, iterate, length, show, symdiff
 using Base:
-    Threads, IdSet, isdeprecated, issingletontype, isvarargtype, loaded_modules_array,
+    Threads, IdSet, checked_mul, isdeprecated, issingletontype, isvarargtype, loaded_modules_array,
     mul_with_overflow, specializations, typename, uniontypes, unsorted_names, unwrap_unionall
 using .Threads: @spawn
 using Core: TypeofBottom, Typeof

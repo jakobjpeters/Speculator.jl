@@ -8,6 +8,8 @@ struct CartesianProduct{T}
     )
 end
 
+eltype(::Type{CartesianProduct{T}}) where T = Vector{T}
+
 function iterate(cp::CartesianProduct, indices::Vector{Int})
     count, index, input = length(indices), 1, cp.input
 
@@ -31,3 +33,5 @@ function iterate(cp::CartesianProduct{T}) where T
     else iterate(cp, map(Int ∘ >(1), eachindex(input)))
     end
 end
+
+length(cp::CartesianProduct) = mapreduce(length, checked_mul, cp.input; init = 1)
