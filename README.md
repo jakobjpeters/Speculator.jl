@@ -55,24 +55,26 @@ julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 [ Info: Compiled `Main.Showcase.h(::String)`
 [ Info: Compiled `Main.Showcase.h(::Symbol)`
 
-julia> speculate_repl(; limit = 4, verbosity = debug)
-[ Info: The REPL will call `speculate` with each input
+julia> install_speculator(; limit = 4, verbosity = debug)
+[ Info: The input speculator has been installed into the REPL
 
-julia> i(::Union{String, Symbol}, ::Union{String, Symbol}) = nothing;
-[ Info: Compiled `Main.i(::Symbol, ::Symbol)`
-[ Info: Compiled `Main.i(::String, ::Symbol)`
-[ Info: Compiled `Main.i(::Symbol, ::String)`
-[ Info: Compiled `Main.i(::String, ::String)`
+julia> i(::Union{String, Symbol}, ::AbstractChar) = nothing;
+
+[ Info: Compiled `Main.i(::Symbol, ::LinearAlgebra.WrapperChar)`
+[ Info: Compiled `Main.i(::String, ::LinearAlgebra.WrapperChar)`
+[ Info: Compiled `Main.i(::Symbol, ::Char)`
+[ Info: Compiled `Main.i(::String, ::Char)`
 ```
 
 ## Features
 
+- Precompile packages
+- Compile interactively
 - Filter values
 - Run in the background
 - Handle abstractly typed methods
 - Save compilation directives to a file
 - Show logging statements
-- Run in REPL after each input
 
 ### Planned
 
