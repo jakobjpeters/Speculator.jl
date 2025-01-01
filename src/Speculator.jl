@@ -19,8 +19,10 @@ TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`
 TODO: implement `Base.symdiff(::Verbosity, ::Verbosity...)`
 TODO: remove dependency on InteractiveUtils.jl
-TODO: https://github.com/JuliaLang/julia/issues/28808
-TODO: https://github.com/JuliaLang/julia/issues/52677
+TODO:
+    https://github.com/JuliaLang/julia/issues/28808
+    https://github.com/JuliaLang/julia/issues/52677
+    https://github.com/JuliaLang/julia/issues/39902
 =#
 
 import Base: isdisjoint, isempty, issetequal, issubset, iterate, show

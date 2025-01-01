@@ -23,7 +23,6 @@ const searched_types = IdSet{Type}
     searched_types::searched_types = searched_types()
     subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()
     union_type_cache::IdDict{Union, Vector{Any}} = IdDict{Union, Vector{Any}}()
-
     searched_methods::IdSet{Method} = IdSet{Method}()
 end
 
