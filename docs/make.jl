@@ -25,7 +25,7 @@ finish()
 
 setdocmeta!(Speculator, :DocTestSetup, :(using Speculator))
 
-makedocs(; modules = [Speculator], format = Documenter.HTML(edit_link = "main"), pages = [
+makedocs(; modules = [Speculator], format = Documenter.HTML(; edit_link = "main"), pages = [
     "Speculator.jl" => "index.md", "References" => "references.md"
 ], sitename = "Speculator.jl", source = "source")
 

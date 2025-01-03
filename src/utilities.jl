@@ -23,7 +23,6 @@ const searched_types = IdSet{Type}
     searched_types::searched_types = searched_types()
     subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()
     union_type_cache::IdDict{Union, Vector{Any}} = IdDict{Union, Vector{Any}}()
-
     searched_methods::IdSet{Method} = IdSet{Method}()
 end
 
@@ -56,13 +55,13 @@ function log_repl(f, background_repl::Bool)
         mistate = active_repl.mistate
 
         sleep(0.01)
-        refresh_line(mistate)
+        invokelatest(refresh_line, mistate)
         print(stderr, "\r\33[K")
     end
 
     f()
 
-    background_repl && refresh_line(mistate)
+    background_repl && invokelatest(refresh_line, mistate)
     nothing
 end
 

@@ -132,7 +132,6 @@ search(x::Module, p::Parameters) = for name ∈ unsorted_names(x; all = true)
         check_module(_x, x) && search(_x, p)
     end
 end
-
 search((@nospecialize x), p::Parameters) = if check_searched(x, p)
     for method ∈ methods(x)
         if method ∉ p.searched_methods
@@ -206,8 +205,8 @@ See also [`install_speculator`](@ref).
     `Base.ispublic`, and checking properties of the value itself.
 - `value`:
     When given a `Module`, `speculate` will recursively search its contents
-    using `names(::Module;\u00A0all\u00A0=\u00A0true)`, for each name that is
-    not deprecated, is not an external module, and satisifes the `predicate`.
+    using `names(::Module;\u00A0all\u00A0=\u00A0true)`, for each defined value that
+    is not deprecated, is not an external module, and satisifes the `predicate`.
     For other values, each of their generic `methods`
     are searched for corresponding compilable methods.
 
@@ -232,7 +231,8 @@ See also [`install_speculator`](@ref).
 - `path::String = ""`:
     Saves successful precompilation directives to a file
     if the `path` is not empty and it is not a `dry` run.
-    Note that these directives may require loading additional modules to run.
+    Generated methods that are known to have been compiled are skipped.
+    The resulting directives may require loading additional modules to run.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
     If this function is used to precompile methods in a package,

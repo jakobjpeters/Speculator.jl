@@ -48,11 +48,12 @@ julia> install_speculator(; limit = 2, verbosity = debug)
 [ Info The input speculator has been installed into the REPL
 
 julia> f() = nothing;
-[ Info: Compiled `Main.f()`
 
+[ Info: Compiled `Main.f()`
 julia> g(::Union{String, Symbol}) = nothing;
-[ Info: Compiled `Main.g(::String)`
+
 [ Info: Compiled `Main.g(::Symbol)`
+[ Info: Compiled `Main.g(::String)`
 ```
 """
 function install_speculator(

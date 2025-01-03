@@ -1,7 +1,7 @@
 name = "Speculator"
 uuid = "ac92255e-d98e-45c4-b636-98964c1c8a8b"
 authors = ["Jakob Peters <jakobj.peters@gmail.com>"]
-version = "0.1.0"
+version = "0.1.2"
 
 [deps]
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
