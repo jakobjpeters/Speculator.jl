@@ -14,13 +14,10 @@ function (is::InputSpeculator)(x)
     end
 end
 
-log_input_speculator() = @info "The input speculator has been installed into the REPL"
-
 function install_speculator!(
     (@nospecialize predicate), ast_transforms::Vector{Any}, is_background::Bool;
 (@nospecialize parameters...))
     push!(ast_transforms, InputSpeculator(parameters, predicate))
-    log_repl(log_input_speculator, is_background)
 end
 
 """
@@ -93,5 +90,4 @@ julia> uninstall_speculator()
 """
 uninstall_speculator() = if isinteractive() && is_repl_ready()
     uninstall_speculator!(Base.active_repl_backend.ast_transforms)
-    @info "The input speculator has been uninstalled from the REPL"
 end
