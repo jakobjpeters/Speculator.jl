@@ -4,90 +4,86 @@ function log_warn(p::Parameters, caller_type::Type, compilable_types::Vector{Typ
         _signature = signature(caller_type, compilable_types)
         p.counters[warned] += 1
 
-        log_repl(() -> (
+        log_repl(p.background_repl) do
             @warn "Compilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-        ), p.background_repl)
+        end
     end
 end
 
+compile_methods((@nospecialize x::Builtin), ::Parameters, ::Method, ::DataType) = nothing
 function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
-    if !(parentmodule(m) == Core && Tuple <: sig)
-        parameter_types = sig.types[2:end]
+    parameter_types = sig.types[2:end]
 
-        if isempty(parameter_types) || !isvarargtype(last(parameter_types))
-            count = 1
-            skip = false
-            limit = p.limit
-            no_specialize = m.nospecialize
-            product_cache = p.product_cache
-            product_types = Vector{Type}[]
+    if isempty(parameter_types) || !isvarargtype(last(parameter_types))
+        count = 1
+        skip = false
+        limit = p.limit
+        no_specialize = m.nospecialize
+        product_cache = p.product_cache
+        product_types = Vector{Type}[]
 
-            for i ∈ eachindex(parameter_types)
-                parameter_type = parameter_types[i]
-                compilable_types = begin
-                    if isconcretetype(parameter_type) || is_subset(1, no_specialize >> (i - 1))
-                        if check_predicate(parameter_type, p) Type[parameter_type]
-                        else (skip = true) && break
-                        end
-                    else
-                        new_compilable_types, skip = get!(product_cache, parameter_type) do
-                            abstract_types = Type[parameter_type]
-                            new_skip = false
-                            new_compilable_types = Type[]
-
-                            while !isempty(abstract_types)
-                                branch = pop!(abstract_types)
-
-                                if isconcretetype(branch)
-                                    if check_predicate(branch, p)
-                                        push!(new_compilable_types, branch)
-                                        new_skip = new_skip || length(new_compilable_types) > limit
-                                        new_skip && break
-                                    end
-                                else subtypes!(abstract_types, branch, p)
-                                end
-                            end
-
-                            new_compilable_types => new_skip || isempty(new_compilable_types)
-                        end
-
-                        skip = skip || begin
-                            count, overflow = mul_with_overflow(
-                                count, length(new_compilable_types)
-                            )
-                            overflow || count > limit
-                        end
-                        skip ? break : new_compilable_types
+        for i ∈ eachindex(parameter_types)
+            parameter_type = parameter_types[i]
+            compilable_types = begin
+                if isconcretetype(parameter_type) || is_subset(1, no_specialize >> (i - 1))
+                    if check_predicate(parameter_type, p) Type[parameter_type]
+                    else (skip = true) && break
                     end
-                end
+                else
+                    new_compilable_types, skip = get!(product_cache, parameter_type) do
+                        abstract_types = Type[parameter_type]
+                        new_skip = false
+                        new_compilable_types = Type[]
 
-                push!(product_types, compilable_types)
+                        while !isempty(abstract_types)
+                            branch = pop!(abstract_types)
+
+                            if isconcretetype(branch)
+                                if check_predicate(branch, p)
+                                    push!(new_compilable_types, branch)
+                                    (new_skip = length(new_compilable_types) > limit) && break
+                                end
+                            else subtypes!(abstract_types, branch, p)
+                            end
+                        end
+
+                        new_compilable_types => new_skip || isempty(new_compilable_types)
+                    end
+
+                    skip = skip || begin
+                        count, overflow = mul_with_overflow(count, length(new_compilable_types))
+                        overflow || count > limit
+                    end
+                    skip ? break : new_compilable_types
+                end
             end
 
-            if !skip
-                caller_type = Typeof(x)
-                dry = p.dry
+            push!(product_types, compilable_types)
+        end
 
-                if !dry
-                    file = p.file
-                    _open = isopen(file)
-                    specialization_types = IdSet{Type}()
+        if !skip
+            caller_type = Typeof(x)
+            dry = p.dry
 
-                    for specialization ∈ specializations(m)
-                        push!(specialization_types, specialization.specTypes)
-                    end
+            if !dry
+                file = p.file
+                _open = isopen(file)
+                specialization_types = IdSet{Type}()
+
+                for specialization ∈ specializations(m)
+                    push!(specialization_types, specialization.specTypes)
                 end
+            end
 
-                for compilable_types ∈ CartesianProduct(product_types)
-                    signature_type = Tuple{caller_type, compilable_types...}
+            for compilable_types ∈ CartesianProduct(product_types)
+                signature_type = Tuple{caller_type, compilable_types...}
 
-                    if dry || any(==(signature_type), specialization_types)
-                        log_debug(p, skipped, caller_type, compilable_types)
-                    elseif precompile(signature_type)
-                        log_debug(p, compiled, caller_type, compilable_types)
-                        if _open println(file, "precompile(", signature_type, ')') end
-                    else log_warn(p, caller_type, compilable_types)
-                    end
+                if dry || any(==(signature_type), specialization_types)
+                    log_debug(p, skipped, caller_type, compilable_types)
+                elseif precompile(signature_type)
+                    log_debug(p, compiled, caller_type, compilable_types)
+                    if _open println(file, "precompile(", signature_type, ')') end
+                else log_warn(p, caller_type, compilable_types)
                 end
             end
         end
@@ -189,9 +185,6 @@ See also [`install_speculator`](@ref).
 
 # Parameters
 
-    This is first called when searching the names of a `Module`,
-    and later called when searching for concrete types of method parameters.
-
 - `predicate = Returns(true)`:
     This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
     Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
@@ -235,7 +228,7 @@ See also [`install_speculator`](@ref).
     The resulting directives may require loading additional modules to run.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
-    If this function is used to precompile methods in a package,
+    If this function is used to precompile a package,
     this should be set to [`silent`](@ref) or [`warn`](@ref).
     See also [`Verbosity`](@ref).
 

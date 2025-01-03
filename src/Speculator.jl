@@ -2,8 +2,6 @@
 module Speculator
 
 #=
-TODO: after registering, mention PrecompileSignatures.jl and Speculator.jl?
-    https://github.com/JuliaLang/PrecompileTools.jl/issues/28
 TODO: plot number of methods vs `limit` vs time
 TODO: tutorial to create a system image?
 TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
@@ -29,7 +27,7 @@ using Base:
     Threads, IdSet, checked_mul, isdeprecated, issingletontype, isvarargtype, loaded_modules_array,
     mul_with_overflow, specializations, typename, uniontypes, unsorted_names, unwrap_unionall
 using .Threads: @spawn
-using Core: TypeofBottom, Typeof
+using Core: Builtin, TypeofBottom, Typeof
 using InteractiveUtils: subtypes
 
 include("cartesian_products.jl")
