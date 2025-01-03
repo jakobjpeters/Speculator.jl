@@ -17,6 +17,8 @@ const header = """
 [![Documentation Workflow](https://github.com/jakobjpeters/Speculator.jl/workflows/Documentation/badge.svg)](https://github.com/jakobjpeters/Speculator.jl/actions/workflows/documentation.yml)
 
 [![Codecov](https://codecov.io/gh/jakobjpeters/Speculator.jl/graph/badge.svg?token=KNLZXD2MV0)](https://codecov.io/gh/jakobjpeters/Speculator.jl)
+[![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FSp&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/Speculator)
+[![Dependents](https://juliahub.com/docs/General/Speculator/stable/deps.svg)](https://juliahub.com/ui/Packages/General/Speculator?t=2)
 
 </div>
 
