@@ -1,6 +1,6 @@
 
 # News
 
-## v0.1.1
+## v0.1.2
 
-- Fix incorrect name of `install_speculator` in documentation
+- Fix [`refresh_line` too new to be called #5](https://github.com/jakobjpeters/Speculator.jl/issues/5)

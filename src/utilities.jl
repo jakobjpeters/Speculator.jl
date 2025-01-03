@@ -55,13 +55,13 @@ function log_repl(f, background_repl::Bool)
         mistate = active_repl.mistate
 
         sleep(0.01)
-        refresh_line(mistate)
+        invokelatest(refresh_line, mistate)
         print(stderr, "\r\33[K")
     end
 
     f()
 
-    background_repl && refresh_line(mistate)
+    background_repl && invokelatest(refresh_line, mistate)
     nothing
 end
 

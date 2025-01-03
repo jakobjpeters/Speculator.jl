@@ -1,6 +1,10 @@
 
 # History
 
+## v0.1.1
+
+- Fix incorrect name of `install_speculator` in documentation
+
 ## v0.1.0
 
 - `speculate`: Search for compilation directives
