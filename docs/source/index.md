@@ -66,14 +66,22 @@ julia> i(::Union{String, Symbol}, ::AbstractChar) = nothing;
 
 ## Similar Packages
 
-- [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
+### Precompilation
+
 - [CompileTraces.jl](https://github.com/serenity4/CompileTraces.jl)
-- [JET.jl](https://github.com/aviatesk/JET.jl)
-- [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
+- [JuliaScript.jl](https://github.com/jolin-io/JuliaScript.jl)
 - [PackageCompiler.jl](https://github.com/JuliaLang/PackageCompiler.jl)
-- [PkgCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
+
+### Reflection
+
+- [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
+- [JET.jl](https://github.com/aviatesk/JET.jl)
+- [LookingGlass.jl](https://github.com/NHDaly/LookingGlass.jl)
+- [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
+- [MethodInspector.jl](https://github.com/bluesmoon/MethodInspector.jl)
+- [PkgCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
     - [SnoopCompileCore.jl](https://github.com/timholy/SnoopCompile.jl/tree/master/SnoopCompileCore)
 
