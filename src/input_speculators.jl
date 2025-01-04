@@ -42,7 +42,6 @@ See also [`speculate`](@ref).
 
 ```julia-repl
 julia> install_speculator(; limit = 2, verbosity = debug)
-[ Info The input speculator has been installed into the REPL
 
 julia> f() = nothing;
 
@@ -69,8 +68,9 @@ function install_speculator(
                     predicate, Base.active_repl_backend.ast_transforms, true;
                 background, parameters...)
             end)
-            nothing
         end
+
+        nothing
     end
 end
 
@@ -83,11 +83,11 @@ uninstall_speculator!(ast_transforms::Vector{Any}) = filter!(
 
 Uninstall the hook that may have previously been installed by [`install_speculator`](@ref).
 
-```julia-repl
+```jldoctest
 julia> uninstall_speculator()
-[ Info: The input speculator has been uninstalled from the REPL
 ```
 """
 uninstall_speculator() = if isinteractive() && is_repl_ready()
     uninstall_speculator!(Base.active_repl_backend.ast_transforms)
+    nothing
 end

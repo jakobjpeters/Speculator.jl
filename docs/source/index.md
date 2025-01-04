@@ -40,7 +40,6 @@ julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 [ Info: Compiled `Main.Showcase.h(::Symbol)`
 
 julia> install_speculator(; limit = 4, verbosity = debug)
-[ Info: The input speculator has been installed into the REPL
 
 julia> i(::Union{String, Symbol}, ::AbstractChar) = nothing;
 
