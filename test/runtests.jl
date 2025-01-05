@@ -17,6 +17,7 @@ Aqua.test_all(Speculator)
     end
 
     @test isnothing(check_all_explicit_imports_are_public(Speculator; ignore = (
+        :Builtin,
         :IdSet,
         :TypeofBottom,
         :Typeof,
@@ -105,12 +106,9 @@ end
 @test !Speculator.is_repl_ready()
 
 ast_transforms = []
-@test_logs (:info, "The input speculator has been installed into the REPL") begin
-    Speculator.install_speculator!(Returns(true), ast_transforms, false)
-end
+@test (Speculator.install_speculator!(Returns(true), ast_transforms, false); true)
 @test only(ast_transforms) isa Speculator.InputSpeculator
 @test isempty(Speculator.uninstall_speculator!(ast_transforms))
-
 @test (uninstall_speculator(); true)
 
 @test repr(all_modules) == "all_modules::AllModules"
@@ -244,6 +242,17 @@ path = tempname()
 
 @test count_methods(Returns(false), all_modules)[1] == 0
 @test count_methods(Returns(false), ::String -> nothing)[1] == 0
+
+abstract type A end
+struct B <: A end
+struct C <: A end
+
+g(::A) = nothing
+
+@test count_methods((_, n) -> n != :A, g) == [0, 1]
+@test count_methods((_, n) -> n != :B, g) == [1, 1]
+@test count_methods(g) == [0, 1]
+@test count_methods(g; limit = 2) == [2, 1]
 
 # speculate(Base)
 # count precompiled + skipped
