@@ -22,8 +22,8 @@ end
 
 """
     install_speculator(
-        predicate = (m, _) -> m ∉ [Base, Core]; background::Bool = true,
-    parameters...)
+        predicate = (m, _) -> m ∉ [Base, Core];
+    background::Bool = true, parameters...)
 
 Install a hook that calls
 `speculate(predicate,\u00A0value;\u00A0background,\u00A0parameters...)`
