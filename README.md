@@ -53,8 +53,13 @@ julia> speculate(Showcase; verbosity = debug)
 julia> speculate(Base.isexported, Showcase; verbosity = debug)
 [ Info: Skipped `Main.Showcase.g(::Int)`
 
+julia> speculate(Showcase.h; verbosity = debug) do m, n
+           !(m == Core && n == :String)
+       end
+[ Info: Compiled `Main.Showcase.h(::Symbol)`
+
 julia> speculate(Showcase.h; limit = 2, verbosity = debug)
-[ Info: Compiled `Main.Showcase.h(::String)`
+[ Info: Skipped `Main.Showcase.h(::String)`
 [ Info: Compiled `Main.Showcase.h(::Symbol)`
 
 julia> install_speculator(; limit = 4, verbosity = debug)
