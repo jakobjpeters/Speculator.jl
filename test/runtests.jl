@@ -247,12 +247,12 @@ abstract type A end
 struct B <: A end
 struct C <: A end
 
-g(::A) = nothing
+h(::A) = nothing
 
-@test count_methods((_, n) -> n != :A, g) == [0, 1]
-@test count_methods((_, n) -> n != :B, g) == [1, 1]
-@test count_methods(g) == [0, 1]
-@test count_methods(g; limit = 2) == [2, 1]
+@test count_methods((_, n) -> n != :A, h) == [0, 1]
+@test count_methods((_, n) -> n != :B, h) == [1, 1]
+@test count_methods(h) == [0, 1]
+@test count_methods(h; limit = 2) == [2, 1]
 
 # speculate(Base)
 # count precompiled + skipped
