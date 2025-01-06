@@ -21,7 +21,7 @@ struct AllModules end
     all_modules::AllModules
 
 The singleton constant of [`AllModules`](@ref) used with [`speculate`](@ref)
-to generate a compilation workload using all loaded modules.
+to generate compilable methods from every loaded module.
 
 # Examples
 

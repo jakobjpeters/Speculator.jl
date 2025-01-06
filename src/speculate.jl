@@ -192,6 +192,8 @@ See also [`install_speculator`](@ref).
     This is called when searching the names of a `Module` if the
     given module and name satisfy `isdefined` and `!isdeprecated`,
     and is called when searching for types from method parameters.
+    Each component of a `Union` type is checked individually.
+    Skipped parameter types do not count towards the method specialization `limit`.
     The default predicate `Returns(true)` will search every value,
     whereas the predicate `Returns(false)` will not search any value.
     Some useful predicates include `Base.isexported`,
