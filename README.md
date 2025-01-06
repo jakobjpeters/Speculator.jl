@@ -14,6 +14,8 @@
 [![Documentation Workflow](https://github.com/jakobjpeters/Speculator.jl/workflows/Documentation/badge.svg)](https://github.com/jakobjpeters/Speculator.jl/actions/workflows/documentation.yml)
 
 [![Codecov](https://codecov.io/gh/jakobjpeters/Speculator.jl/graph/badge.svg?token=KNLZXD2MV0)](https://codecov.io/gh/jakobjpeters/Speculator.jl)
+[![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FSp&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/Speculator)
+[![Dependents](https://juliahub.com/docs/General/Speculator/stable/deps.svg)](https://juliahub.com/ui/Packages/General/Speculator?t=2)
 
 </div>
 
@@ -56,7 +58,6 @@ julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 [ Info: Compiled `Main.Showcase.h(::Symbol)`
 
 julia> install_speculator(; limit = 4, verbosity = debug)
-[ Info: The input speculator has been installed into the REPL
 
 julia> i(::Union{String, Symbol}, ::AbstractChar) = nothing;
 
@@ -83,14 +84,22 @@ julia> i(::Union{String, Symbol}, ::AbstractChar) = nothing;
 
 ## Similar Packages
 
-- [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
+### Precompilation
+
 - [CompileTraces.jl](https://github.com/serenity4/CompileTraces.jl)
-- [JET.jl](https://github.com/aviatesk/JET.jl)
-- [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
+- [JuliaScript.jl](https://github.com/jolin-io/JuliaScript.jl)
 - [PackageCompiler.jl](https://github.com/JuliaLang/PackageCompiler.jl)
-- [PkgCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [PrecompileSignatures.jl](https://github.com/rikhuijzer/PrecompileSignatures.jl)
 - [PrecompileTools.jl](https://github.com/JuliaLang/PrecompileTools.jl)
+
+### Reflection
+
+- [Cthulhu.jl](https://github.com/JuliaDebug/Cthulhu.jl)
+- [JET.jl](https://github.com/aviatesk/JET.jl)
+- [LookingGlass.jl](https://github.com/NHDaly/LookingGlass.jl)
+- [MethodAnalysis.jl](https://github.com/timholy/MethodAnalysis.jl)
+- [MethodInspector.jl](https://github.com/bluesmoon/MethodInspector.jl)
+- [PkgCacheInspector.jl](https://github.com/timholy/PkgCacheInspector.jl)
 - [SnoopCompile.jl](https://github.com/timholy/SnoopCompile.jl)
     - [SnoopCompileCore.jl](https://github.com/timholy/SnoopCompile.jl/tree/master/SnoopCompileCore)
 
