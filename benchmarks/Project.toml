@@ -1,0 +1,4 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+MethodAnalysis = "85b6ec6f-f7df-4429-9514-a64bcd9ee824"
+PrecompileSignatures = "91cefc8d-f054-46dc-8f8c-26e11d7c5411"
