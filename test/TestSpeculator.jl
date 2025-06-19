@@ -8,16 +8,18 @@ using MethodAnalysis, PrecompileSignatures
 module X end
 
 @testset "`Verbosity`" begin
-    verbosities = [debug, review, silent, warn]
+    verbosities = instances(Verbosity)
     combined_verbosities = reduce(∪, verbosities)
 
-    @test string(combined_verbosities) == "(debug ∪ review ∪ warn)::Speculator.Verbosity"
+    @test verbosities == (silent, debug, review, warn)
+    @test string(combined_verbosities) == "debug ∪ review ∪ warn"
     @test combined_verbosities == debug ∪ review ∪ warn
+    @test collect(combined_verbosities) isa Vector{Verbosity}
     @test combined_verbosities ⊆ debug ∪ review ∪ warn
     @test combined_verbosities.value == 7
     @test all(v -> v ⊆ v, verbosities)
     @test all(v -> silent ⊆ v, verbosities)
-    @test all(((v, n),) -> string(v) == n * "::Speculator.Verbosity", [
+    @test all(((v, n),) -> string(v) == n, [
         debug => "debug", review => "review", silent => "silent", warn => "warn"
     ])
     @test isdisjoint(debug, review)
@@ -140,7 +142,7 @@ f() = nothing
         r" {4}var\"##\d+\" = \(g\(\) = begin",
         r" {16}true",
         r" {12}end\)",
-        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \".*\", verbosity = \(debug ∪ review\)::Speculator.Verbosity\)\.\.\.\)",
+        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \".*\", verbosity = debug ∪ review\)\.\.\.\)",
         r" {4}var\"##\d+\"",
         r"end"
     ])
@@ -157,92 +159,92 @@ f() = nothing
     # @eval Base is_interactive = false
 end
 
-# function count_methods(predicate, value; parameters...)
-#    pipe = Pipe()
-#    redirect_stderr(pipe) do
-#        speculate(predicate, value; path = tempname(), verbosity = review, parameters...)
-#    end
-#    close(pipe[2])
-#    parse.(Int, match(r"Generated `(\d+)` methods from `(\d+)`", read(pipe, String)).captures)
-# end
-# count_methods(value; parameters...) = count_methods(
-#     Speculator.default_predicate, value;
-# parameters...)
+function count_methods(predicate, value; parameters...)
+   pipe = Pipe()
+   redirect_stderr(pipe) do
+       speculate(predicate, value; path = tempname(), verbosity = review, parameters...)
+   end
+   close(pipe[2])
+   parse.(Int, match(r"Generated `(\d+)` methods from `(\d+)`", read(pipe, String)).captures)
+end
+count_methods(value; parameters...) = count_methods(
+    Speculator.default_predicate, value;
+parameters...)
 
-# speculator_count = count_methods(all_modules)[2]
-# precompile_signatures_count = length(
-#     PrecompileSignatures.precompilables(Base.loaded_modules_array(),
-# PrecompileSignatures.Config(; split_unions = false)))
-# method_analysis_count = 0
-# function count_method_analysis(x::Method)
-#     sig = x.sig
-#     if sig isa DataType && !(parentmodule(x) == Core && Tuple <: sig)
-#         types = sig.types[2:end]
-#         if (
-#             (isempty(types) || !Base.isvarargtype(last(types))) &&
-#             all(eachindex(types)) do i
-#                 isconcretetype(types[i]) || Speculator.is_subset(1, x.nospecialize >> (i - 1))
-#             end
-#         )
-#             global method_analysis_count += 1
-#         end
-#     end
-#     true
-# end
-# count_method_analysis((@nospecialize _)) = true
-# visit(count_method_analysis)
-# @test method_analysis_count < speculator_count
-# @test precompile_signatures_count < speculator_count
+speculator_count = count_methods(all_modules)[2]
+precompile_signatures_count = length(
+    PrecompileSignatures.precompilables(Base.loaded_modules_array(),
+PrecompileSignatures.Config(; split_unions = false)))
+method_analysis_count = 0
+function count_method_analysis(x::Method)
+    sig = x.sig
+    if sig isa DataType && !(parentmodule(x) == Core && Tuple <: sig)
+        types = sig.types[2:end]
+        if (
+            (isempty(types) || !Base.isvarargtype(last(types))) &&
+            all(eachindex(types)) do i
+                isconcretetype(types[i]) || Speculator.is_subset(1, x.nospecialize >> (i - 1))
+            end
+        )
+            global method_analysis_count += 1
+        end
+    end
+    true
+end
+count_method_analysis((@nospecialize _)) = true
+visit(count_method_analysis)
+@test method_analysis_count < speculator_count
+@test precompile_signatures_count < speculator_count
 
-# path = tempname()
-# rm(path; force = true)
-# s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
-# @test_warn "$s" speculate(X; path, dry = true)
-# @test !isfile(path)
-# speculate(X; path)
-# @test isfile(path)
+path = tempname()
+rm(path; force = true)
+s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
+@test_warn "$s" speculate(X; path, dry = true)
+@test !isfile(path)
+speculate(X; path)
+@test isfile(path)
 
-# path = tempname()
-# @test_nowarn speculate(all_modules; path)
-# @test_broken (include(path); true)
-# # include(x -> :(@test $x), path)
+path = tempname()
+@test_nowarn speculate(all_modules; path)
+@test_broken (include(path); true)
+# include(x -> :(@test $x), path)
 
-# @test issorted(map(limit -> count_methods(all_modules; limit)[2], 1:4))
+@test issorted(map(limit -> count_methods(all_modules; limit)[2], 1:4))
 
-# @test count_methods(Returns(false), all_modules)[1] == 0
-# @test count_methods(Returns(false), ::String -> nothing)[1] == 0
+@test count_methods(Returns(false), all_modules)[1] == 0
+@test count_methods(Returns(false), ::String -> nothing)[1] == 0
 
-# abstract type A end
-# struct B <: A end
-# struct C <: A end
+abstract type A end
+struct B <: A end
+struct C <: A end
 
-# h(::A) = nothing
+h(::A) = nothing
 
-# @test count_methods((_, n) -> n != :A, h) == [0, 1]
-# @test count_methods((_, n) -> n != :B, h) == [1, 1]
-# @test count_methods(h) == [0, 1]
-# @test count_methods(h; limit = 2) == [2, 1]
+@test count_methods((_, n) -> n != :A, h) == [0, 1]
+@test count_methods((_, n) -> n != :B, h) == [1, 1]
+@test count_methods(h) == [0, 1]
+@test count_methods(h; limit = 2) == [2, 1]
 
-# # speculate(Base)
-# # count precompiled + skipped
-# # speculate(Base)
-# # test that 0 were compiled and total number were skipped
+# speculate(Base)
+# count precompiled + skipped
+# speculate(Base)
+# test that 0 were compiled and total number were skipped
 
-# #=
-# julia> (::String)() = nothing;
+#=
+julia> (::String)() = nothing;
 
-# julia> speculate(""; verbosity = debug)
-# [ Info: Skipped `(::String)()`
+julia> speculate(""; verbosity = debug)
+[ Info: Skipped `(::String)()`
 
-# julia> speculate(String; verbosity = debug)
-# [ Info: Skipped `String(::Vector{UInt8})`
-# ...
+julia> speculate(String; verbosity = debug)
+[ Info: Skipped `String(::Vector{UInt8})`
+...
 
-# julia> speculate(string; verbosity = debug)
-# [ Info: Skipped `string(::Base.UUID)`
-# ...
-# =#
+julia> speculate(string; verbosity = debug)
+[ Info: Skipped `string(::Base.UUID)`
+...
+=#
 
-# # `include("scripts/trial.jl")`
+# `include("scripts/trial.jl")`
 
 end # module

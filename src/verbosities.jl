@@ -1,22 +1,25 @@
 
 """
-    Verbosity
+    Verbosity <: AbstractSet{Verbosity}
 
 A flag that determine what logging statements are shown during [`speculate`](@ref).
 
 This is modelled as a set, where [`silent`](@ref) is the empty set.
-The non-empty component flags are [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
+The component sets are [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
 
 # Interface
 
-This type implements part of the `AbstractSet` interface.
+This type implements the iteration and part of the `AbstractSet` interface.
 
+- `hash(::Verbosity,\u00A0::UInt)`
+- `instances(::Type{Verbosity})`
 - `intersect(::Verbosity,\u00A0::Verbosity...)`
-- `isdisjoint(::Verbosity,\u00A0::Verbosity)`
-- `isempty(::Verbosity)`
-- `issetequal(::Verbosity,\u00A0::Verbosity)`
 - `issubset(::Verbosity,\u00A0::Verbosity)`
+- `iterate(::Verbosity,\u00A0::Vector{Verbosity})`
+- `iterate(::Verbosity)`
+- `length(::Verbosity)`
 - `setdiff(::Verbosity,\u00A0::Verboosity...)`
+- `show(::IO,\u00A0MIME"text/plain",\u00A0::Verbosity)`
 - `show(::IO,\u00A0::Verbosity)`
 - `symdiff(::Verbosity,\u00A0::Verbosity...)`
 - `union(::Verbosity,\u00A0::Verbosity...)`
@@ -37,7 +40,7 @@ julia> debug ⊆ warn
 false
 ```
 """
-struct Verbosity
+struct Verbosity <: AbstractSet{Verbosity}
     value::UInt8
 
     global _Verbosity(value::Integer) = new(value)
@@ -112,24 +115,35 @@ combine(f, verbosity::Verbosity, verbosities::Verbosity...) = _Verbosity(reduce(
     (value, _verbosity) -> f(value, _verbosity.value), verbosities; init = verbosity.value
 ))
 
+hash(verbosity::Verbosity, code::UInt) = hash((Verbosity, verbosity.value), code)
+
+instances(::Type{Verbosity}) = (silent, debug, review, warn)
+
 intersect(verbosity::Verbosity, verbosities::Verbosity...) = combine(&, verbosity, verbosities...)
-
-isdisjoint(verbosity::Verbosity, _verbosity::Verbosity) = isempty(verbosity ∩ _verbosity)
-
-isempty(verbosity::Verbosity) = verbosity == silent
-
-issetequal(verbosity::Verbosity, _verbosity::Verbosity) = verbosity == _verbosity
 
 issubset(verbosity::Verbosity, _verbosity::Verbosity) = is_subset(
     verbosity.value, _verbosity.value
 )
+
+function iterate(verbosity::Verbosity, components::Vector{Verbosity})
+    while true
+        if isempty(components) break
+        else
+            component = pop!(components)
+            component ⊆ verbosity && return component, components
+        end
+    end
+end
+iterate(verbosity::Verbosity) = Base.iterate(verbosity, collect(tail(instances(Verbosity))))
+
+length(verbosity::Verbosity) = count_ones(verbosity.value)
 
 setdiff(verbosity::Verbosity, verbosities::Verbosity...) = verbosity ∩ _Verbosity(
     ~union(silent, verbosities...).value
 )
 
 function show(io::IO, verbosity::Verbosity)
-    if isempty(verbosity) print(io, "silent")
+    if verbosity == silent print(io, "silent")
     else
         names = Symbol[]
 
@@ -137,15 +151,20 @@ function show(io::IO, verbosity::Verbosity)
             _verbosity ⊆ verbosity && push!(names, name)
         end
 
-        if length(names) == 1 print(io, only(names))
-        else
-            print(io, '(')
-            join(io, names, " ∪ ")
-            print(io, ')')
-        end
+        join(io, names, " ∪ ")
+    end
+end
+function show(io::IO, ::MIME"text/plain", verbosity::Verbosity)
+    show_type = !(Verbosity <: get(io, :typeinfo, Union{}))
+
+    if show_type && length(verbosity) > 1
+        print(io, '(')
+        show(io, verbosity)
+        print(io, ')')
+    else show(io, verbosity)
     end
 
-    print(io, "::", Verbosity)
+    if show_type print(io, "::", Verbosity) end
 end
 
 symdiff(verbosity::Verbosity, verbosities::Verbosity...) = combine(⊻, verbosity, verbosities...)
