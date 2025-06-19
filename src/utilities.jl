@@ -15,15 +15,17 @@ const searched_types = IdSet{Type}
     limit::Int
     predicate
     verbosity::Verbosity
-    counters::Dict{Counter, Int} = Dict(map(o -> o => 0, counters))
+    counters::Dict{Counter, Int} = Dict(counters .=> 0)
     predicate_cache::IdDict{Pair{Module, Symbol}, Bool} = IdDict{Pair{Module, Symbol}, Bool}()
-    product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{DataType, Pair{Vector{Type}, Bool}}()
+    product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{
+        DataType, Pair{Vector{Type}, Bool}
+    }()
     searched_callables::searched_callables = searched_callables()
     searched_functions::searched_functions = searched_functions()
+    searched_methods::IdSet{Method} = IdSet{Method}()
     searched_types::searched_types = searched_types()
     subtype_cache::IdDict{DataType, Vector{Any}} = IdDict{DataType, Vector{Any}}()
     union_type_cache::IdDict{Union, Vector{Any}} = IdDict{Union, Vector{Any}}()
-    searched_methods::IdSet{Method} = IdSet{Method}()
 end
 
 is_repl_ready() = (
@@ -35,7 +37,7 @@ is_repl_ready() = (
     !(isnothing(active_repl) || isnothing(active_repl.mistate))
 end
 
-is_subset(f::Union{Int, UInt8}, _f::Union{Int32, UInt8}) = f == (f & _f)
+is_subset(f::Integer, _f::Integer) = f == (f & _f)
 
 function log_debug(p::Parameters, c::Counter, caller_type::Type, caller_types::Vector{Type})
     p.counters[c] += 1
@@ -110,10 +112,6 @@ subtypes!(abstract_types::Vector{Type}, type::Union, p::Parameters) = _subtypes!
 
 function wait_for_repl()
     _time = time()
-
-    while !(repl_ready = is_repl_ready()) && time() - _time < 10
-        sleep(0.1)
-    end
-
+    while !(repl_ready = is_repl_ready()) && time() - _time < 10 sleep(0.1) end
     repl_ready ? nothing : error("Timed out waiting for REPL to load")
 end

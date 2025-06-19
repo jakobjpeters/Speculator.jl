@@ -1,9 +1,17 @@
 
-using Aqua, ExplicitImports, MethodAnalysis, PrecompileSignatures, Speculator, Test
+using Aqua: test_all
+using ExplicitImports:
+    check_all_explicit_imports_are_public, check_all_explicit_imports_via_owners,
+    check_all_qualified_accesses_are_public, check_all_qualified_accesses_via_owners,
+    check_no_implicit_imports, check_no_self_qualified_accesses, check_no_stale_explicit_imports
+using JET: report_package
+using Speculator
+using Test: @test_broken, @test_logs, @test_nowarn, @test_throws, @test_warn, @testset, @test
+using MethodAnalysis, PrecompileSignatures
 
 module X end
 
-Aqua.test_all(Speculator)
+@testset "Aqua.jl" test_all(Speculator)
 
 @testset "ExplicitImports.jl" begin
     for f in [
@@ -37,6 +45,8 @@ Aqua.test_all(Speculator)
         :active_repl, :active_repl_backend
     )))
 end
+
+@testset "JET.jl" report_package(Speculator; target_modules = [Speculator])
 
 @testset "`Verbosity`" begin
     verbosities = [debug, review, silent, warn]
@@ -106,7 +116,7 @@ end
 @test !Speculator.is_repl_ready()
 
 ast_transforms = []
-@test (Speculator.install_speculator!(Returns(true), ast_transforms, false); true)
+@test (Speculator.install_speculator!(Returns(true), ast_transforms); true)
 @test only(ast_transforms) isa Speculator.InputSpeculator
 @test isempty(Speculator.uninstall_speculator!(ast_transforms))
 @test (uninstall_speculator(); true)
@@ -134,7 +144,7 @@ f() = nothing
 @test_throws ErrorException Speculator.wait_for_repl()
 
 @testset "`speculate_repl`" begin
-    is = Speculator.InputSpeculator((), Returns(true))
+    is = Speculator.InputSpeculator(Returns(true), ())
     x = Base.remove_linenums!(is(true))
     lines = split(string(x), '\n')
 
@@ -152,13 +162,13 @@ f() = nothing
         @test !isnothing(match(regex, line))
     end
 
-    _is = Speculator.InputSpeculator((
+    _is = Speculator.InputSpeculator(Base.isexported, (
         background = true,
         dry = true,
         limit = 8,
         path = tempname(),
         verbosity = debug ∪ review
-    ), Base.isexported)
+    ))
     _x = Base.remove_linenums!(_is(:(g() = true)))
     _lines = split(string(_x), '\n')
 

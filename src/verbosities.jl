@@ -40,17 +40,7 @@ false
 struct Verbosity
     value::UInt8
 
-    global verbosity(x::Union{Int, UInt8}) = new(x)
-
-    Base.union(v::Verbosity, vs::Verbosity...) = new(reduce(
-        (value, _v) -> value | _v.value, vs;
-    init = v.value))
-
-    Base.intersect(v::Verbosity, vs::Verbosity...) = new(reduce(
-        (value, _v) -> value & _v.value, vs;
-    init = v.value))
-
-    Base.setdiff(v::Verbosity, vs::Verbosity...) = new(v.value & ~union(vs...).value)
+    global _Verbosity(value::Integer) = new(value)
 end
 
 """
@@ -66,7 +56,7 @@ julia> silent
 silent::Verbosity
 ```
 """
-const silent = verbosity(0)
+const silent = _Verbosity(0)
 
 """
     debug::Verbosity
@@ -81,7 +71,7 @@ julia> debug
 debug::Verbosity
 ```
 """
-const debug = verbosity(1)
+const debug = _Verbosity(1)
 
 """
     review::Verbosity
@@ -99,7 +89,7 @@ julia> debug
 debug::Verbosity
 ```
 """
-const review = verbosity(2)
+const review = _Verbosity(2)
 
 """
     warn::Verbosity
@@ -116,24 +106,36 @@ julia> warn
 warn::Verbosity
 ```
 """
-const warn = verbosity(4)
+const warn = _Verbosity(4)
 
-isdisjoint(v::Verbosity, _v::Verbosity) = isempty(v ∩ _v)
+combine(f, verbosity::Verbosity, verbosities::Verbosity...) = _Verbosity(reduce(
+    (value, _verbosity) -> f(value, _verbosity.value), verbosities; init = verbosity.value
+))
 
-isempty(v::Verbosity) = v == silent
+intersect(verbosity::Verbosity, verbosities::Verbosity...) = combine(&, verbosity, verbosities...)
 
-issetequal(v::Verbosity, _v::Verbosity) = v == _v
+isdisjoint(verbosity::Verbosity, _verbosity::Verbosity) = isempty(verbosity ∩ _verbosity)
 
-issubset(v::Verbosity, _v::Verbosity) = is_subset(v.value, _v.value)
+isempty(verbosity::Verbosity) = verbosity == silent
 
-function show(io::IO, v::Verbosity)
-    if v == silent print(io, "silent")
+issetequal(verbosity::Verbosity, _verbosity::Verbosity) = verbosity == _verbosity
+
+issubset(verbosity::Verbosity, _verbosity::Verbosity) = is_subset(
+    verbosity.value, _verbosity.value
+)
+
+setdiff(verbosity::Verbosity, verbosities::Verbosity...) = verbosity ∩ _Verbosity(
+    ~union(silent, verbosities...).value
+)
+
+function show(io::IO, verbosity::Verbosity)
+    if isempty(verbosity) print(io, "silent")
     else
         names = Symbol[]
 
-        debug ⊆ v && push!(names, :debug)
-        review ⊆ v && push!(names, :review)
-        warn ⊆ v && push!(names, :warn)
+        for (_verbosity, name) ∈ (debug => :debug, review => :review, warn => :warn)
+            _verbosity ⊆ verbosity && push!(names, name)
+        end
 
         if length(names) == 1 print(io, only(names))
         else
@@ -146,14 +148,6 @@ function show(io::IO, v::Verbosity)
     print(io, "::", Verbosity)
 end
 
-function symdiff(v::Verbosity, vs::Verbosity...)
-    counts = Dict(debug => 0, review => 0, warn => 0)
+symdiff(verbosity::Verbosity, verbosities::Verbosity...) = combine(⊻, verbosity, verbosities...)
 
-    for verbosity in keys(counts)
-        for _v in [v, vs...]
-            (counts[verbosity] += verbosity ⊆ _v) > 1 && break
-        end
-    end
-
-    reduce(union, keys(filter!(==(1) ∘ last, counts)); init = silent)
-end
+union(verbosity::Verbosity, verbosities::Verbosity...) = combine(|, verbosity, verbosities...)

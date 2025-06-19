@@ -276,14 +276,14 @@ function speculate(predicate, value;
         if background
             errormonitor(@spawn begin
                 (background_repl = interactive && verbosity != silent) && wait_for_repl()
-                initialize_parameters(value, path, save;
-                    background_repl, dry, limit, predicate, verbosity
+                initialize_parameters(
+                    value, path, save; background_repl, dry, limit, predicate, verbosity
                 )
             end)
             nothing
         else
-            initialize_parameters(value, path, save;
-                dry, limit, predicate, verbosity, background_repl = false
+            initialize_parameters(
+                value, path, save; dry, limit, predicate, verbosity, background_repl = false
             )
         end
     else

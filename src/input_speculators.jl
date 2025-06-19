@@ -1,29 +1,33 @@
 
-struct InputSpeculator{T, F}
-    parameters::T
+struct InputSpeculator{F, T}
     predicate::F
+    parameters::T
 end
 
-function (is::InputSpeculator)(x)
-    _x = gensym()
+function (input_speculator::InputSpeculator)(value)
+    name = gensym()
 
     quote
-        $_x = $x
-        $speculate($(is.predicate), $_x; $(is.parameters)...)
-        $_x
+        $name = $value
+        $speculate($(input_speculator.predicate), $name; $(input_speculator.parameters)...)
+        $name
     end
 end
 
 function install_speculator!(
-    (@nospecialize predicate), ast_transforms::Vector{Any}, is_background::Bool;
-(@nospecialize parameters...))
-    push!(ast_transforms, InputSpeculator(parameters, predicate))
+    (@nospecialize predicate),
+    ast_transforms::Vector{Any};
+    (@nospecialize parameters...)
+)
+    push!(ast_transforms, InputSpeculator(predicate, parameters))
 end
 
 """
     install_speculator(
-        predicate = (m, _) -> m ∉ [Base, Core];
-    background::Bool = true, parameters...)
+        predicate = (_module::Module, ::Symbol) -> _module ∉ (Base, Core);
+        background::Bool = true,
+        parameters...
+    )
 
 Install a hook that calls
 `speculate(predicate,\u00A0value;\u00A0background,\u00A0parameters...)`
@@ -53,20 +57,25 @@ julia> g(::Union{String, Symbol}) = nothing;
 ```
 """
 function install_speculator(
-    predicate = (m, _) -> m ∉ [Base, Core]; background::Bool = true, parameters...
+    predicate = (_module::Module, ::Symbol) -> m ∉ (Base, Core);
+    background::Bool = true,
+    parameters...
 )
     @nospecialize
     if isinteractive()
         if is_repl_ready()
             ast_transforms = Base.active_repl_backend.ast_transforms
             uninstall_speculator!(ast_transforms)
-            install_speculator!(predicate, ast_transforms, false; background, parameters...)
+            install_speculator!(predicate, ast_transforms; background, parameters...)
         else
             errormonitor(@spawn begin
                 wait_for_repl()
                 install_speculator!(
-                    predicate, Base.active_repl_backend.ast_transforms, true;
-                background, parameters...)
+                    predicate,
+                    Base.active_repl_backend.ast_transforms;
+                    background,
+                    parameters...
+                )
             end)
         end
 

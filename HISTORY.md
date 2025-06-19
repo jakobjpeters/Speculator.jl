@@ -1,6 +1,13 @@
 
 # History
 
+## v0.2.0
+
+- Check the `predicate` while searching method parameter types
+- Stop logging during `install_speculator` and `uninstall_speculator`
+    - Closes [`verbosity=silent` prints installed message #4](https://github.com/jakobjpeters/Speculator.jl/issues/4)
+- Implemented `symdiff(::Verbosity, ::Verbosity...)`
+
 ## v0.1.2
 
 - Fix [`refresh_line` too new to be called #5](https://github.com/jakobjpeters/Speculator.jl/issues/5)
