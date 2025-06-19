@@ -26,9 +26,6 @@ const header = """
 
 open("README.md"; write = true) do file
     print(
-        file,
-        header,
-        delimiter,
-        last(split(read("docs/source/index.md", String), delimiter))
+        file, header, delimiter, last(split(read("docs/source/index.md", String), delimiter))
     )
 end
