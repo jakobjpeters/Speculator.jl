@@ -11,7 +11,6 @@ TODO: does `f(; (@nospecialize xs...))` work?
 TODO: does `f(@nospecialize _)` work?
 TODO: remove closures, because they can't be precompiled?
 TODO: check this package works in notebooks
-TODO: rename `dry`?
 TODO: wait for a background call to `speculate` to finish before starting another?
 TODO: document that some methods aren't skipped
     `f(::String)`, `f(::Union{String, Symbol})`, `speculate(f; verbosity = debug)`

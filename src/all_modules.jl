@@ -28,6 +28,8 @@ to search for compilable methods from every loaded module.
 ```jldoctest
 julia> all_modules
 all_modules::AllModules
+
+julia> speculate(all_modules; compile = false)
 ```
 """
 const all_modules = AllModules()

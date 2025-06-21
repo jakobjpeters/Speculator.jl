@@ -63,9 +63,9 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
 
         if !skip
             caller_type = Typeof(x)
-            dry = p.dry
+            compile = p.compile
 
-            if !dry
+            if compile
                 file = p.file
                 _open = isopen(file)
                 specialization_types = IdSet{Type}()
@@ -78,7 +78,7 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             for compilable_types ∈ CartesianProduct(product_types)
                 signature_type = Tuple{caller_type, compilable_types...}
 
-                if dry || any(==(signature_type), specialization_types)
+                if !compile || any(==(signature_type), specialization_types)
                     log_debug(p, skipped, caller_type, compilable_types)
                 elseif precompile(signature_type)
                     log_debug(p, compiled, caller_type, compilable_types)
@@ -159,9 +159,9 @@ function initialize_parameters(
                 seconds = round_time(elapsed)
                 header = "Generated `$generated` methods from `$_generic` generic methods in `$seconds` seconds"
 
-                if _parameters.dry @info "$header"
-                else
+                if _parameters.compile
                     @info "$header\nCompiled `$_compiled`\nSkipped  `$_skipped`\nWarned   `$_warned`"
+                else @info "$header"
                 end
             end
         end
@@ -210,11 +210,12 @@ See also [`install_speculator`](@ref).
 - `background::Bool = false`:
     Specifies whether to run on a thread in the `:default` pool.
     The number of available threads can be determined using `Threads.nthreads(:default)`.
-- `dry::Bool = false`:
+- `compile::Bool = true`:
     Specifies whether to run `precompile` on generated method signatures.
-    This is useful for testing with `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
+    Skipping compilation is useful for testing with
+    `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
     Method signatures that are known to be specialized are skipped.
-    Note that `dry` must be `false` to save the directives to a file with the `path` parameter.
+    Note that `compile` must be `true` to save the directives to a file with the `path` parameter.
 - `limit::Int = $default_limit`:
     Specifies the maximum number of compilable methods that are generated from a generic method.
     Values less than `1` will throw an error.
@@ -225,9 +226,11 @@ See also [`install_speculator`](@ref).
     much time precompiling a single generic method.
 - `path::String = ""`:
     Saves successful precompilation directives to a file
-    if the `path` is not empty and it is not a `dry` run.
+    if `compile = true` and `!isempty(path)`.
     Generated methods that are known to have been compiled are skipped.
     The resulting directives may require loading additional modules to run.
+    [CompileTraces.jl](https://github.com/serenity4/CompileTraces.jl)
+    may be useful in such cases.
 - `verbosity::Verbosity = warn`:
     Specifies what logging statements to show.
     If this function is used to precompile a package,
@@ -263,27 +266,27 @@ julia> speculate(Showcase.h; limit = 2, verbosity = debug)
 """
 function speculate(predicate, value;
     background::Bool = false,
-    dry::Bool = false,
+    compile::Bool = true,
     limit::Int = default_limit,
     path::String = "",
     verbosity::Verbosity = warn
 )
     @nospecialize
     limit > 0 || error("The `limit` must be greater than `0`")
-    interactive, save = isinteractive(), !(dry || isempty(path))
+    interactive, save = isinteractive(), compile && !isempty(path)
 
     if interactive || save || (@ccall jl_generating_output()::Cint) == 1
         if background
             errormonitor(@spawn begin
                 (background_repl = interactive && verbosity != silent) && wait_for_repl()
                 initialize_parameters(
-                    value, path, save; background_repl, dry, limit, predicate, verbosity
+                    value, path, save; background_repl, compile, limit, predicate, verbosity
                 )
             end)
             nothing
         else
             initialize_parameters(
-                value, path, save; dry, limit, predicate, verbosity, background_repl = false
+                value, path, save; compile, limit, predicate, verbosity, background_repl = false
             )
         end
     else

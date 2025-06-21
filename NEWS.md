@@ -3,7 +3,10 @@
 
 ## v0.3.0
 
-- `Verbosity` is now a subtype of `AbstractSet{Verbosity}`
-- `Verbosity` now implements the iteration interface
-- Implement `instances(::Type{Verbosity})`
-- Fix implementation of `symdiff(::Verbosity, ::Verbosity...)` and `setdiff(::Verbosity, ::Verbosity...)`.
+- `speculate`
+    - Use `compile = true` instead of `dry = false` to compile generated signatures
+- `Verbosity`
+    - Is now a subtype of `AbstractSet{Verbosity}`
+    - Now implements the iteration interface
+    - Implement `instances(::Type{Verbosity})`
+    - Fix implementation of `symdiff(::Verbosity, ::Verbosity...)` and `setdiff(::Verbosity, ::Verbosity...)`.

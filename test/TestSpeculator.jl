@@ -38,7 +38,7 @@ end
         r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds$"
     ) Speculator.initialize_parameters(nothing, "", false;
         background_repl = false,
-        dry = true,
+        compile = false,
         limit = 1,
         predicate = Speculator.default_predicate,
         verbosity = review
@@ -49,7 +49,7 @@ end
         r"^Generated `0` methods from `0` generic methods in `\d+\.\d{4}` seconds\nCompiled `0`\nSkipped  `0`\nWarned   `0`$"
     ) Speculator.initialize_parameters(nothing, "", false;
         background_repl = false,
-        dry = false,
+        compile = true,
         limit = 1,
         predicate = Speculator.default_predicate,
         verbosity = review
@@ -89,7 +89,7 @@ ast_transforms = []
         Speculator.log_warn(Speculator.Parameters(;
             file,
             background_repl = false,
-            dry = false,
+            compile = true,
             limit = 1,
             predicate = Returns(true),
             verbosity = warn
@@ -125,7 +125,7 @@ f() = nothing
 
     _is = Speculator.InputSpeculator(Base.isexported, (
         background = true,
-        dry = true,
+        compile = false,
         limit = 8,
         path = tempname(),
         verbosity = debug ∪ review
@@ -142,7 +142,7 @@ f() = nothing
         r" {4}var\"##\d+\" = \(g\(\) = begin",
         r" {16}true",
         r" {12}end\)",
-        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, dry = true, limit = 8, path = \".*\", verbosity = debug ∪ review\)\.\.\.\)",
+        r" {4}\(Speculator.speculate\)\(Base\.isexported, var\"##\d+\"; \(background = true, compile = false, limit = 8, path = \".*\", verbosity = debug ∪ review\)\.\.\.\)",
         r" {4}var\"##\d+\"",
         r"end"
     ])
@@ -199,7 +199,7 @@ visit(count_method_analysis)
 path = tempname()
 rm(path; force = true)
 s = "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
-@test_warn "$s" speculate(X; path, dry = true)
+@test_warn "$s" speculate(X; path, compile = false)
 @test !isfile(path)
 speculate(X; path)
 @test isfile(path)

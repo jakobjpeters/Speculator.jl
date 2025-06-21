@@ -10,7 +10,7 @@ const searched_types = IdSet{Type}
 
 @kwdef struct Parameters
     background_repl::Bool
-    dry::Bool
+    compile::Bool
     file::IOStream
     limit::Int
     predicate
