@@ -47,7 +47,7 @@ function log_repl(
             name, color = details(verbosity)
 
             printstyled(name, ": "; color)
-            println(signature(caller_type, caller_types))
+            show_signature(caller_type, caller_types)
         end
     end
 end
@@ -68,24 +68,43 @@ function log_repl(messager, background_repl::Bool)
     nothing
 end
 
-function round_time(x::Float64)
-    whole, fraction = split(string(max(0.0, round(x; digits = 2))), '.')
-    whole * '.' * rpad(fraction, 2, '0')
-end
+function show_signature(caller_type::Type, compilable_types::Vector{Type})
+    _compilable_types = Stateful(compilable_types)
 
-function signature(caller_type::Type, compilable_types::Vector{Type})
-    s = join(map(type -> "::" * string(type), compilable_types), ", ")
-    signature(caller_type) * '(' * s * ')'
+    show_signature(caller_type)
+    print('(')
+
+    for compilable_type ∈ _compilable_types
+        print("::")
+        show(compilable_type)
+        isempty(_compilable_types) || print(", ")
+    end
+
+    println(')')
 end
-function signature(caller_type::DataType)
-    if isdefined(caller_type, :instance) repr(caller_type.instance)
-    else
-        parameters = caller_type.parameters
-        isempty(parameters) ? "(::" * repr(caller_type) * ')' : repr(only(parameters))
+function show_signature(caller_type::DataType)
+    if isdefined(caller_type, :instance) show(caller_type.instance)
+    elseif hasproperty(caller_type, :name)
+        name = caller_type.name
+
+        if hasproperty(name, :name) && name.module == Core && name.name == :Type
+            show(only(caller_type.parameters))
+        else show(caller_type)
+        end
+    else show(caller_type)
     end
 end
-signature(caller_type::UnionAll) = "(::" * repr(caller_type) * ')'
-signature(caller_type::Union{Union, TypeofBottom}) = repr(caller_type)
+function show_signature(caller_type::UnionAll)
+    var = caller_type.var
+
+    if var.lb <: Union{} && Any <: var.ub show(caller_type)
+    else
+        print('(')
+        show(caller_type)
+        print(')')
+    end
+end
+show_signature(caller_type::Union{TypeofBottom, Union}) = show(caller_type)
 
 function _subtypes!(
     f,

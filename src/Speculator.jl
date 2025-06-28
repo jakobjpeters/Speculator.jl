@@ -2,7 +2,6 @@
 module Speculator
 
 #=
-TODO: `signature(typeof(Base.active_repl.mistate.current_mode.prompt))`
 TODO: highlight method signatures with OhMyREPL.jl
 TODO: plot number of methods vs `limit` vs time
 TODO: tutorial to create a system image?

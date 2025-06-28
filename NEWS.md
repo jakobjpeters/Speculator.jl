@@ -4,6 +4,7 @@
 ## v0.3.0
 
 - No longer warns when speculation is not ran
+- Fix error printing callable objects with multiple type parameters
 - Better log formatting
 - `speculate`
     - Use `compile = true` instead of `dry = false` to compile generated signatures

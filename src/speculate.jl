@@ -144,13 +144,21 @@ function initialize_parameters(
             counters = _parameters.counters
             warned, reviewed, passed, compiled = map(verbosity -> counters[verbosity], verbosities)
             generated = compiled + passed + warned
-            seconds = round_time(elapsed)
             name, color = details(review)
+            whole, fraction = split(string(max(0.0, round(elapsed; digits = 2))), '.')
 
             log_repl(_parameters.background_repl) do
                 printstyled(name, ": "; color)
                 println(
-                    "Generated $generated compilable signatures from $reviewed methods in $seconds seconds"
+                    "Generated ",
+                    generated,
+                    " compilable signatures from ",
+                    reviewed,
+                    " methods in ",
+                    whole,
+                    '.',
+                    rpad(fraction, 2, '0'),
+                    " seconds"
                 )
 
                 if _parameters.compile
