@@ -2,6 +2,8 @@
 module Speculator
 
 #=
+TODO: `signature(typeof(Base.active_repl.mistate.current_mode.prompt))`
+TODO: highlight method signatures with OhMyREPL.jl
 TODO: plot number of methods vs `limit` vs time
 TODO: tutorial to create a system image?
 TODO: benchmark with `PrecompileSignatures.jl` and `MethodAnalysis.jl`:
@@ -24,7 +26,7 @@ TODO:
 import Base:
     eltype, hash, instances, intersect, issubset, iterate, length, setdiff, show, symdiff, union
 using Base:
-    Threads, IdSet,
+    Threads, IdSet, Iterators.Stateful,
     checked_mul, isdeprecated, issingletontype, isvarargtype, loaded_modules_array,
     mul_with_overflow, specializations, tail, typename, uniontypes, unsorted_names, unwrap_unionall
 using .Threads: @spawn
@@ -40,7 +42,8 @@ include("input_speculators.jl")
 
 export
     AllModules, Verbosity,
-    all_modules, debug, review, silent, warn, install_speculator, speculate, uninstall_speculator
+    all_modules, compile, pass, review, silent, warn,
+    install_speculator, speculate, uninstall_speculator
 
 speculate(Speculator; limit = 4)
 

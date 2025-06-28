@@ -5,7 +5,7 @@
 A flag that determine what logging statements are shown during [`speculate`](@ref).
 
 This is modelled as a set, where [`silent`](@ref) is the empty set.
-The component sets are [`debug`](@ref), [`review`](@ref), and [`warn`](@ref).
+The component sets are [`compile`](@ref), [`pass`](@ref), [`review`](@ref), and [`warn`](@ref).
 
 # Interface
 
@@ -62,37 +62,53 @@ silent::Verbosity
 const silent = _Verbosity(0)
 
 """
-    debug::Verbosity
+    compile::Verbosity
 
 A flag of [`Verbosity`](@ref) which specifies that
-[`speculate`](@ref) will show each successful call to `precompile`.
+[`speculate`](@ref) will show each compiled method signature.
 
 # Examples
 
 ```jldoctest
-julia> debug
-debug::Verbosity
+julia> compile
+compile::Verbosity
 ```
 """
-const debug = _Verbosity(1)
+const compile = _Verbosity(1)
+
+"""
+    pass::Verbosity
+
+A flag of [`Verbosity`](@ref) which specifies that
+[`speculate`](@ref) will show each method signature that was
+either previously compiled or unchecked due to `compile = false`.
+
+# Examples
+
+```jldoctest
+julia> pass
+pass::Verbosity
+```
+"""
+const pass = _Verbosity(2)
 
 """
     review::Verbosity
 
 A flag of [`Verbosity`](@ref) which specifies that [`speculate`](@ref)
-will show a summary of the number of methods generated,
-the number of generic methods found, and the duration.
-If `compile = true`, this also shows the number of generated
-methods that were compiled, skipped, and warned.
+will show a summary of the number of generated concrete method signatures,
+the number of generic methods found, and the search duration.
+If `compile = true`, this also shows the number of method
+signatures that were compiled, skipped, and warned.
 
 # Examples
 
 ```jldoctest
-julia> debug
-debug::Verbosity
+julia> review
+review::Verbosity
 ```
 """
-const review = _Verbosity(2)
+const review = _Verbosity(4)
 
 """
     warn::Verbosity
@@ -109,7 +125,7 @@ julia> warn
 warn::Verbosity
 ```
 """
-const warn = _Verbosity(4)
+const warn = _Verbosity(8)
 
 combine(f, verbosity::Verbosity, verbosities::Verbosity...) = _Verbosity(reduce(
     (value, _verbosity) -> f(value, _verbosity.value), verbosities; init = verbosity.value
@@ -117,7 +133,7 @@ combine(f, verbosity::Verbosity, verbosities::Verbosity...) = _Verbosity(reduce(
 
 hash(verbosity::Verbosity, code::UInt) = hash((Verbosity, verbosity.value), code)
 
-instances(::Type{Verbosity}) = (silent, debug, review, warn)
+instances(::Type{Verbosity}) = (silent, compile, pass, review, warn)
 
 intersect(verbosity::Verbosity, verbosities::Verbosity...) = combine(&, verbosity, verbosities...)
 
@@ -134,7 +150,7 @@ function iterate(verbosity::Verbosity, components::Vector{Verbosity})
         end
     end
 end
-iterate(verbosity::Verbosity) = Base.iterate(verbosity, collect(tail(instances(Verbosity))))
+iterate(verbosity::Verbosity) = Base.iterate(verbosity, collect(verbosities))
 
 length(verbosity::Verbosity) = count_ones(verbosity.value)
 
@@ -142,18 +158,27 @@ setdiff(verbosity::Verbosity, verbosities::Verbosity...) = verbosity ∩ _Verbos
     ~union(silent, verbosities...).value
 )
 
+function details(verbosity::Verbosity)
+    if verbosity == compile; :compile => :light_cyan
+    elseif verbosity == pass; :pass => :light_blue
+    elseif verbosity == review; :review => :light_magenta
+    elseif verbosity == warn; :warn => :light_yellow
+    else error("a compound `Verbosity` has no details")
+    end
+end
+
 function show(io::IO, verbosity::Verbosity)
     if verbosity == silent print(io, "silent")
     else
-        names = Symbol[]
+        _details = Stateful(Iterators.map(details, verbosity ∩ (compile ∪ pass ∪ review ∪ warn)))
 
-        for (_verbosity, name) ∈ (debug => :debug, review => :review, warn => :warn)
-            _verbosity ⊆ verbosity && push!(names, name)
+        for (name, color) ∈ _details
+            print(io, name)
+            isempty(_details) || print(io, " ∪ ")
         end
-
-        join(io, names, " ∪ ")
     end
 end
+
 function show(io::IO, ::MIME"text/plain", verbosity::Verbosity)
     show_type = !(Verbosity <: get(io, :typeinfo, Union{}))
 

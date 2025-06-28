@@ -1,15 +1,4 @@
 
-function log_warn(p::Parameters, caller_type::Type, compilable_types::Vector{Type})
-    if warn ⊆ p.verbosity
-        _signature = signature(caller_type, compilable_types)
-        p.counters[warned] += 1
-
-        log_repl(p.background_repl) do
-            @warn "Compilation failed, please file a bug report in Speculator.jl for:\n`$_signature`"
-        end
-    end
-end
-
 compile_methods((@nospecialize x::Builtin), ::Parameters, ::Method, ::DataType) = nothing
 function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataType)
     parameter_types = sig.types[2:end]
@@ -79,11 +68,11 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
                 signature_type = Tuple{caller_type, compilable_types...}
 
                 if !compile || any(==(signature_type), specialization_types)
-                    log_debug(p, skipped, caller_type, compilable_types)
+                    log_repl(p, pass, caller_type, compilable_types)
                 elseif precompile(signature_type)
-                    log_debug(p, compiled, caller_type, compilable_types)
+                    log_repl(p, Speculator.compile, caller_type, compilable_types)
                     if _open println(file, "precompile(", signature_type, ')') end
-                else log_warn(p, caller_type, compilable_types)
+                else log_repl(p, warn, caller_type, compilable_types)
                 end
             end
         end
@@ -132,7 +121,7 @@ search((@nospecialize x), p::Parameters) = if check_searched(x, p)
     for method ∈ methods(x)
         if method ∉ p.searched_methods
             push!(p.searched_methods, method)
-            p.counters[generic] += 1
+            p.counters[review] += 1
             compile_methods(x, p, method, method.sig)
         end
     end
@@ -152,16 +141,28 @@ function initialize_parameters(
         elapsed = @elapsed search_all_modules(x, _parameters)
 
         if review ⊆ _parameters.verbosity
+            counters = _parameters.counters
+            warned, reviewed, passed, compiled = map(verbosity -> counters[verbosity], verbosities)
+            generated = compiled + passed + warned
+            seconds = round_time(elapsed)
+            name, color = details(review)
+
             log_repl(_parameters.background_repl) do
-                _counters = _parameters.counters
-                _compiled, _generic, _skipped, _warned = map(s -> _counters[s], counters)
-                generated = _compiled + _skipped + _warned
-                seconds = round_time(elapsed)
-                header = "Generated `$generated` methods from `$_generic` generic methods in `$seconds` seconds"
+                printstyled(name, ": "; color)
+                println(
+                    "Generated $generated compilable signatures from $reviewed methods in $seconds seconds"
+                )
 
                 if _parameters.compile
-                    @info "$header\nCompiled `$_compiled`\nSkipped  `$_skipped`\nWarned   `$_warned`"
-                else @info "$header"
+                    for (verbosity, counter) ∈ (
+                        compile => compiled, pass => passed, warn => warned
+                    )
+                        _name, _color = details(verbosity)
+
+                        printstyled("- "; color)
+                        printstyled(_name, ": "; color = _color)
+                        println(counter)
+                    end
                 end
             end
         end
@@ -217,7 +218,8 @@ See also [`install_speculator`](@ref).
     Method signatures that are known to be specialized are skipped.
     Note that `compile` must be `true` to save the directives to a file with the `path` parameter.
 - `limit::Int = $default_limit`:
-    Specifies the maximum number of compilable methods that are generated from a generic method.
+    Specifies the maximum number of concrete method
+    signatures that are generated from a generic method.
     Values less than `1` will throw an error.
     Otherwise, method signatures will be generated from the Cartesian product each parameter type.
     Concrete types and those marked with `@nospecialize` are used directly.
@@ -227,7 +229,7 @@ See also [`install_speculator`](@ref).
 - `path::String = ""`:
     Saves successful precompilation directives to a file
     if `compile = true` and `!isempty(path)`.
-    Generated methods that are known to have been compiled are skipped.
+    Generated method signatures that are known to have been compiled are skipped.
     The resulting directives may require loading additional modules to run.
     [CompileTraces.jl](https://github.com/serenity4/CompileTraces.jl)
     may be useful in such cases.
@@ -272,7 +274,7 @@ function speculate(predicate, value;
     verbosity::Verbosity = warn
 )
     @nospecialize
-    limit > 0 || error("The `limit` must be greater than `0`")
+    limit > 0 || error("the `limit` must be greater than `0`")
     interactive, save = isinteractive(), compile && !isempty(path)
 
     if interactive || save || (@ccall jl_generating_output()::Cint) == 1

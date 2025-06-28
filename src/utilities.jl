@@ -1,7 +1,5 @@
 
-@enum Counter compiled generic skipped warned
-
-const counters = instances(Counter)
+const verbosities = reverse(tail(instances(Verbosity)))
 const default_limit = 1
 const default_predicate = Returns(true)
 const searched_callables = IdSet{DataType}
@@ -15,7 +13,7 @@ const searched_types = IdSet{Type}
     limit::Int
     predicate
     verbosity::Verbosity
-    counters::Dict{Counter, Int} = Dict(counters .=> 0)
+    counters::Dict{Verbosity, Int} = Dict(verbosities .=> 0)
     predicate_cache::IdDict{Pair{Module, Symbol}, Bool} = IdDict{Pair{Module, Symbol}, Bool}()
     product_cache::IdDict{Type, Pair{Vector{Type}, Bool}} = IdDict{
         DataType, Pair{Vector{Type}, Bool}
@@ -39,18 +37,22 @@ end
 
 is_subset(f::Integer, _f::Integer) = f == (f & _f)
 
-function log_debug(p::Parameters, c::Counter, caller_type::Type, caller_types::Vector{Type})
-    p.counters[c] += 1
+function log_repl(
+    p::Parameters, verbosity::Verbosity, caller_type::Type, caller_types::Vector{Type}
+)
+    p.counters[verbosity] += 1
 
-    if debug ⊆ p.verbosity
-        _signature = signature(caller_type, caller_types)
-        statement = uppercasefirst(string(c))
+    if verbosity ⊆ p.verbosity
+        log_repl(p.background_repl) do
+            name, color = details(verbosity)
 
-        log_repl(() -> (@info "$statement `$_signature`"), p.background_repl)
+            printstyled(name, ": "; color)
+            println(signature(caller_type, caller_types))
+        end
     end
 end
 
-function log_repl(f, background_repl::Bool)
+function log_repl(messager, background_repl::Bool)
     if background_repl
         active_repl = Base.active_repl
         refresh_line = typeof(active_repl).name.module.LineEdit.refresh_line
@@ -61,15 +63,14 @@ function log_repl(f, background_repl::Bool)
         print(stderr, "\r\33[K")
     end
 
-    f()
-
+    messager()
     background_repl && invokelatest(refresh_line, mistate)
     nothing
 end
 
 function round_time(x::Float64)
-    whole, fraction = split(string(max(0.0, round(x; digits = 4))), '.')
-    whole * '.' * rpad(fraction, 4, '0')
+    whole, fraction = split(string(max(0.0, round(x; digits = 2))), '.')
+    whole * '.' * rpad(fraction, 2, '0')
 end
 
 function signature(caller_type::Type, compilable_types::Vector{Type})
