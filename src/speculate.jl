@@ -249,21 +249,21 @@ julia> module Showcase
            h(::Union{String, Symbol}) = nothing
        end;
 
-julia> speculate(Showcase; verbosity = debug)
-[ Info: Compiled `Main.Showcase.g(::Int)`
-[ Info: Compiled `Main.Showcase.f()`
+julia> speculate(Showcase; verbosity = compile)
+compile: Main.Showcase.g(::Int64)
+compile: Main.Showcase.f()
 
-julia> speculate(Base.isexported, Showcase; verbosity = debug)
-[ Info: Skipped `Main.Showcase.g(::Int)`
+julia> speculate(Showcase; verbosity = pass)
+pass: Main.Showcase.g(::Int64)
 
-julia> speculate(Showcase.h; verbosity = debug) do m, n
+julia> speculate(Showcase.h; verbosity = compile) do m, n
            !(m == Core && n == :String)
        end
-[ Info: Compiled `Main.Showcase.h(::Symbol)`
+compile: Main.Showcase.h(::Symbol)
 
-julia> speculate(Showcase.h; limit = 2, verbosity = debug)
-[ Info: Skipped `Main.Showcase.h(::String)`
-[ Info: Compiled `Main.Showcase.h(::Symbol)`
+julia> speculate(Showcase.h; limit = 2, verbosity = compile ∪ pass)
+pass: Main.Showcase.h(::Symbol)
+compile: Main.Showcase.h(::String)
 ```
 """
 function speculate(predicate, value;

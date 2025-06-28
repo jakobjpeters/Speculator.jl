@@ -35,7 +35,6 @@ on each input `value` in the REPL.
 
 Subsequent calls to this function may be used to replace the hook.
 The hook may be removed using [`uninstall_speculator`](@ref).
-This function has no effect in non-interactive sessions.
 
 See also [`speculate`](@ref).
 
@@ -44,6 +43,8 @@ See also [`speculate`](@ref).
     Since it relies on the REPL being initialized,
     it should be placed at the end of the file.
 
+!!! note
+    This function has no effect in non-interactive sessions.
 ```julia-repl
 julia> install_speculator(; limit = 2, verbosity = debug)
 
@@ -92,6 +93,8 @@ uninstall_speculator!(ast_transforms::Vector{Any}) = filter!(
 
 Uninstall the hook that may have previously been installed by [`install_speculator`](@ref).
 
+!!! note
+    This function has no effect in non-interactive sessions.
 ```jldoctest
 julia> uninstall_speculator()
 ```

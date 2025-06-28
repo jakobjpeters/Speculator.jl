@@ -27,17 +27,11 @@ This type implements the iteration and part of the `AbstractSet` interface.
 # Examples
 
 ```jldoctest
-julia> silent
-silent::Verbosity
+julia> instances(Verbosity)
+(silent, compile, pass, review, warn)
 
-julia> debug ∪ review
-(debug ∪ review)::Verbosity
-
-julia> debug ⊆ debug ∪ review
-true
-
-julia> debug ⊆ warn
-false
+julia> silent ∪ compile ∪ pass ∪ review ∪ warn
+(compile ∪ pass ∪ review ∪ warn)::Verbosity
 ```
 """
 struct Verbosity <: AbstractSet{Verbosity}

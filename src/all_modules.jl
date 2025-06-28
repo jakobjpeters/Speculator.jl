@@ -29,7 +29,7 @@ to search for compilable methods from every loaded module.
 julia> all_modules
 all_modules::AllModules
 
-julia> speculate(all_modules; compile = false)
+julia> speculate(all_modules; compile = false, verbosity = review)
 ```
 """
 const all_modules = AllModules()
