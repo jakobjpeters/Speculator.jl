@@ -23,7 +23,8 @@ all_modules
 
 ```@docs
 Verbosity
-debug
+compile
+pass
 review
 silent
 warn
