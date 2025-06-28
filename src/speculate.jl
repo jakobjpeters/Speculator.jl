@@ -291,8 +291,6 @@ function speculate(predicate, value;
                 value, path, save; compile, limit, predicate, verbosity, background_repl = false
             )
         end
-    else
-        @warn "Skipping speculation because it is not being ran during precompilation, an interactive session, or to save compilation directives"
     end
 end
 function speculate(x; parameters...)

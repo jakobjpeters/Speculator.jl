@@ -3,6 +3,7 @@
 
 ## v0.3.0
 
+- No longer warns when speculation is not ran
 - Better log formatting
 - `speculate`
     - Use `compile = true` instead of `dry = false` to compile generated signatures
