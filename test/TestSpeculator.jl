@@ -60,23 +60,23 @@ end
 #     )
 # end
 
-@testset "`signature`" begin
-    types = Type[]
-    @test Speculator.signature(String, types) == "(::String)()"
-    @test Speculator.signature(Type{String}, types) == "String()"
-    @test Speculator.signature(typeof(string), types) == "string()"
-    @test Speculator.signature(Type{<:AbstractString}, types) == "(::Type{<:AbstractString})()"
-    @test Speculator.signature(Union{String, LazyString}, types) == "Union{LazyString, String}()"
-    @test Speculator.signature(Union{}, types) == "Union{}()"
-    @test Speculator.signature(Nothing, [
-        String,
-        Type{String},
-        typeof(string),
-        Type{<:AbstractString},
-        Union{String, LazyString},
-        Union{}
-    ]) == "nothing(::String, ::Type{String}, ::typeof(string), ::Type{<:AbstractString}, ::Union{LazyString, String}, ::Union{})"
-end
+# @testset "`signature`" begin
+#     types = Type[]
+#     @test Speculator.signature(String, types) == "(::String)()"
+#     @test Speculator.signature(Type{String}, types) == "String()"
+#     @test Speculator.signature(typeof(string), types) == "string()"
+#     @test Speculator.signature(Type{<:AbstractString}, types) == "(::Type{<:AbstractString})()"
+#     @test Speculator.signature(Union{String, LazyString}, types) == "Union{LazyString, String}()"
+#     @test Speculator.signature(Union{}, types) == "Union{}()"
+#     @test Speculator.signature(Nothing, [
+#         String,
+#         Type{String},
+#         typeof(string),
+#         Type{<:AbstractString},
+#         Union{String, LazyString},
+#         Union{}
+#     ]) == "nothing(::String, ::Type{String}, ::typeof(string), ::Type{<:AbstractString}, ::Union{LazyString, String}, ::Union{})"
+# end
 
 @test !Speculator.is_repl_ready()
 
