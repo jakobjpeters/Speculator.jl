@@ -46,30 +46,30 @@ julia> module Showcase
            h(::Union{String, Symbol}) = nothing
        end;
 
-julia> speculate(Showcase; verbosity = debug)
-[ Info: Compiled `Main.Showcase.g(::Int)`
-[ Info: Compiled `Main.Showcase.f()`
+julia> speculate(Showcase; verbosity = compile)
+compile: Main.Showcase.g(::Int64)
+compile: Main.Showcase.f()
 
-julia> speculate(Base.isexported, Showcase; verbosity = debug)
-[ Info: Skipped `Main.Showcase.g(::Int)`
+julia> speculate(Base.isexported, Showcase; verbosity = pass)
+pass: Main.Showcase.g(::Int64)
 
-julia> speculate(Showcase.h; verbosity = debug) do m, n
+julia> speculate(Showcase.h; verbosity = compile) do m, n
            !(m == Core && n == :String)
        end
-[ Info: Compiled `Main.Showcase.h(::Symbol)`
+compile: Main.Showcase.h(::Symbol)
 
-julia> speculate(Showcase.h; limit = 2, verbosity = debug)
-[ Info: Skipped `Main.Showcase.h(::String)`
-[ Info: Compiled `Main.Showcase.h(::Symbol)`
+julia> speculate(Showcase.h; limit = 2, verbosity = compile ∪ pass)
+pass: Main.Showcase.h(::Symbol)
+compile: Main.Showcase.h(::String)
 
-julia> install_speculator(; limit = 4, verbosity = debug)
+julia> install_speculator(; limit = 4, verbosity = compile)
 
 julia> i(::Union{String, Symbol}, ::AbstractChar) = nothing;
 
-[ Info: Compiled `Main.i(::Symbol, ::LinearAlgebra.WrapperChar)`
-[ Info: Compiled `Main.i(::String, ::LinearAlgebra.WrapperChar)`
-[ Info: Compiled `Main.i(::Symbol, ::Char)`
-[ Info: Compiled `Main.i(::String, ::Char)`
+compile: Main.i(::Symbol, ::LinearAlgebra.WrapperChar)
+compile: Main.i(::String, ::LinearAlgebra.WrapperChar)
+compile: Main.i(::Symbol, ::Char)
+compile: Main.i(::String, ::Char)
 ```
 
 ## Features

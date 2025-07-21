@@ -58,7 +58,7 @@ julia> g(::Union{String, Symbol}) = nothing;
 ```
 """
 function install_speculator(
-    predicate = (_module::Module, ::Symbol) -> m ∉ (Base, Core);
+    predicate = (::Module, ::Symbol) -> true;
     background::Bool = true,
     parameters...
 )

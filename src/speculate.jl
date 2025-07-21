@@ -303,5 +303,5 @@ function speculate(predicate, value;
 end
 function speculate(x; parameters...)
     @nospecialize
-    speculate(Returns(true), x; parameters...)
+    speculate((::Module, ::Symbol) -> true, x; parameters...)
 end

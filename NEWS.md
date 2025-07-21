@@ -3,6 +3,7 @@
 
 ## v0.3.0
 
+- Changed default predicate in `install_speculator` to always return `true`
 - No longer warns when speculation is not ran
 - Fix error printing callable objects with multiple type parameters
 - Better log formatting
