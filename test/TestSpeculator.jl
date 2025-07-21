@@ -178,7 +178,7 @@ count_methods(value; parameters...) = count_methods(
     Speculator.default_predicate, value;
 parameters...)
 
-@test (speculate(all_modules; verbosity = review); true)
+@test (speculate(all_modules; path = tempname(), verbosity = review); true)
 
 # speculator_count = count_methods(all_modules)[2]
 # precompile_signatures_count = length(
