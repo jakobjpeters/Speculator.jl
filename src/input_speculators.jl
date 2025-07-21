@@ -24,7 +24,7 @@ end
 
 """
     install_speculator(
-        predicate = (_module::Module, ::Symbol) -> _module ∉ (Base, Core);
+        predicate = (::Module, ::Symbol) -> true;
         background::Bool = true,
         parameters...
     )
@@ -46,7 +46,7 @@ See also [`speculate`](@ref).
 !!! note
     This function has no effect in non-interactive sessions.
 ```julia-repl
-julia> install_speculator(; limit = 2, verbosity = debug)
+julia> install_speculator(; limit = 2, verbosity = compile)
 
 julia> f() = nothing;
 

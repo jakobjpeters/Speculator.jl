@@ -194,7 +194,7 @@ See also [`install_speculator`](@ref).
 
 # Parameters
 
-- `predicate = Returns(true)`:
+- `predicate = (::Module, ::Symbol) -> true`:
     This must accept the signature `predicate(::Module,\u00A0::Symbol)::Bool`.
     Returning `true` specifies to search `getproperty(::Module,\u00A0::Symbol)`,
     whereas returning `false` specifies to skip the value.
@@ -222,11 +222,11 @@ See also [`install_speculator`](@ref).
 - `compile::Bool = true`:
     Specifies whether to run `precompile` on generated method signatures.
     Skipping compilation is useful for testing with
-    `verbosity\u00A0=\u00A0debug\u00A0∪\u00A0review`.
+    `verbosity\u00A0=\u00A0pass\u00A0∪\u00A0review`.
     Method signatures that are known to be specialized are skipped.
     Note that `compile` must be `true` to save the directives to a file with the `path` parameter.
 - `limit::Int = $default_limit`:
-    Specifies the maximum number of concrete method
+    Specifies the maximum number of compilable method
     signatures that are generated from a generic method.
     Values less than `1` will throw an error.
     Otherwise, method signatures will be generated from the Cartesian product each parameter type.
