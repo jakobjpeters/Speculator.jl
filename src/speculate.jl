@@ -65,15 +65,20 @@ function compile_methods((@nospecialize x), p::Parameters, m::Method, sig::DataT
             end
 
             for compilable_types ∈ CartesianProduct(product_types)
-                signature_type = Tuple{caller_type, compilable_types...}
+                # @show caller_type (compilable_types...,)
+                # @show methods(x, (compilable_types...,))
+                # println()
+                # if m == which(x, (compilable_types...,))
+                    signature_type = Tuple{caller_type, compilable_types...}
 
-                if !compile || any(==(signature_type), specialization_types)
-                    log_repl(p, pass, caller_type, compilable_types)
-                elseif precompile(signature_type)
-                    log_repl(p, Speculator.compile, caller_type, compilable_types)
-                    if _open println(file, "precompile(", signature_type, ')') end
-                else log_repl(p, warn, caller_type, compilable_types)
-                end
+                    if !compile || any(==(signature_type), specialization_types)
+                        log_repl(p, pass, caller_type, compilable_types)
+                    elseif precompile(signature_type)
+                        log_repl(p, Speculator.compile, caller_type, compilable_types)
+                        if _open println(file, "precompile(", signature_type, ')') end
+                    else log_repl(p, warn, caller_type, compilable_types)
+                    end
+                # end
             end
         end
     end
